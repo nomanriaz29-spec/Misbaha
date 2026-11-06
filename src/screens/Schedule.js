@@ -1,0 +1,195 @@
+import React, { useMemo, useState } from 'react';
+import { View, Text, Pressable, Switch, StyleSheet, ActivityIndicator, Linking } from 'react-native';
+import Sheet, { Group } from '../components/Sheet';
+import { getTimes, fmtTime, METHODS, PRAYERS, defaultsForCountry } from '../lib/prayer';
+import { detectLocation, CITIES } from '../lib/location';
+import { DAILY } from '../data/adhkar';
+import { FONTS } from '../theme';
+
+const OFFSETS = [5, 10, 15, 20, 30];
+
+export function buildPlan(settings, now = new Date()) {
+  const t = getTimes(settings.location, settings, now);
+  if (!t) return [];
+  const off = (settings.offset ?? 15) * 60000;
+  const items = PRAYERS.filter((p) => settings.prayers[p.key]).map((p) => ({
+    at: new Date(t[p.key].getTime() + off), name: 'After ' + p.name, sub: p.body, open: p.open,
+  }));
+  if (settings.daily) {
+    DAILY.forEach((r) => {
+      const at = new Date(now); at.setHours(r.hour, r.minute, 0, 0);
+      items.push({ at, name: r.title, sub: r.body, open: r.open });
+    });
+  }
+  return items.sort((a, b) => a.at - b.at);
+}
+
+export default function Schedule({ visible, onClose, onStart, settings, update, notifOn, onEnableNotifs, theme }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [picker, setPicker] = useState(null); // 'method' | 'city' | null
+
+  const times = useMemo(() => getTimes(settings.location, settings), [settings, visible]);
+  const plan = useMemo(() => buildPlan(settings), [settings, visible]);
+  const now = Date.now();
+  const next = plan.find((x) => x.at.getTime() > now);
+
+  const useGps = async () => {
+    setBusy(true); setMsg('');
+    try {
+      const loc = await detectLocation();
+      if (loc.denied) {
+        setMsg('Location is off for Misbaha. Turn it on in Settings, or choose a city.');
+      } else {
+        update({ location: loc, ...defaultsForCountry(loc.country) });
+        setMsg('Updated to ' + loc.name);
+      }
+    } catch (e) { setMsg(e.message); }
+    setBusy(false);
+  };
+
+  const Row = ({ first, children, style }) => (
+    <View style={[styles.row, { borderTopColor: theme.line, borderTopWidth: first ? 0 : 1 }, style]}>{children}</View>
+  );
+  const T = (p) => <Text {...p} style={[{ fontFamily: FONTS.ui, color: theme.fg, fontSize: 15 }, p.style]} />;
+  const Btn = ({ label, onPress }) => (
+    <Pressable onPress={onPress} style={[styles.btn, { borderColor: theme.line }]}><T style={{ fontSize: 13 }}>{label}</T></Pressable>
+  );
+
+  return (
+    <Sheet visible={visible} title="Prayer & reminders" onClose={() => { setPicker(null); onClose(); }} theme={theme}>
+      <View style={{ gap: 8 }}>
+        <Text style={[styles.lbl, { color: theme.muted }]}>{('Prayer times · ' + (settings.location?.name || '')).toUpperCase()}</Text>
+        <View style={[styles.grid, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          {[['Fajr', 'fajr'], ['Sunrise', 'sunrise'], ['Dhuhr', 'dhuhr'], ['Asr', 'asr'], ['Maghrib', 'maghrib'], ['Isha', 'isha']].map(([n, k]) => (
+            <View key={k} style={styles.cell}>
+              <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONTS.ui }}>{n}</Text>
+              <Text style={{ color: theme.fg, fontSize: 14, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>
+                {times ? fmtTime(times[k]).replace(/ (AM|PM)/, '') : '--'}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {!notifOn && (
+        <Group theme={theme}>
+          <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+            <T style={{ fontFamily: FONTS.uiBold }}>Notifications are off</T>
+            <T style={{ color: theme.muted, fontSize: 13 }}>Turn them on to get a reminder on your phone after each prayer.</T>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Btn label="Turn on" onPress={onEnableNotifs} />
+              <Btn label="Open phone settings" onPress={() => Linking.openSettings()} />
+            </View>
+          </Row>
+        </Group>
+      )}
+
+      <Group label="Today's reminders" theme={theme}>
+        {plan.map((x, i) => {
+          const past = x.at.getTime() <= now;
+          return (
+            <Row key={i} first={i === 0} style={x === next ? { backgroundColor: theme.brassSoft } : null}>
+              <Text style={[styles.tm, { color: past ? theme.muted : theme.fg }]}>{fmtTime(x.at)}</Text>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <T style={{ fontFamily: FONTS.uiBold, color: past ? theme.muted : theme.fg }}>{x.name}</T>
+                <T style={{ color: theme.muted, fontSize: 12.5 }} numberOfLines={2}>{x.sub}</T>
+              </View>
+              <Btn label="Start" onPress={() => onStart(x.open)} />
+            </Row>
+          );
+        })}
+      </Group>
+
+      <Group label="Location" theme={theme}>
+        <Row first>
+          <View style={{ flex: 1 }}>
+            <T style={{ fontFamily: FONTS.uiBold }}>{settings.location?.name || 'Not set'}</T>
+            <T style={{ color: theme.muted, fontSize: 12.5 }}>{settings.location?.source === 'gps' ? 'From your phone’s location' : 'Chosen manually'}</T>
+          </View>
+          {busy ? <ActivityIndicator color={theme.brass} /> : <Btn label="Use my location" onPress={useGps} />}
+        </Row>
+        <Row>
+          <T>Choose a city</T>
+          <Btn label={picker === 'city' ? 'Hide' : 'Choose'} onPress={() => setPicker(picker === 'city' ? null : 'city')} />
+        </Row>
+        {picker === 'city' && CITIES.map((c) => (
+          <Pressable key={c.name} onPress={() => { update({ location: c, ...defaultsForCountry(c.country) }); setPicker(null); setMsg('Updated to ' + c.name); }}
+            style={[styles.opt, { borderTopColor: theme.line }]}>
+            <T>{c.name}</T>
+          </Pressable>
+        ))}
+        {msg ? <Row><T style={{ color: theme.muted, fontSize: 13 }}>{msg}</T></Row> : null}
+      </Group>
+
+      <Group label="Calculation" theme={theme}>
+        <Row first>
+          <View style={{ flex: 1 }}><T>Method</T><T style={{ color: theme.muted, fontSize: 12.5 }}>{METHODS[settings.method]}</T></View>
+          <Btn label={picker === 'method' ? 'Hide' : 'Change'} onPress={() => setPicker(picker === 'method' ? null : 'method')} />
+        </Row>
+        {picker === 'method' && Object.entries(METHODS).map(([k, v]) => (
+          <Pressable key={k} onPress={() => { update({ method: k }); setPicker(null); }}
+            style={[styles.opt, { borderTopColor: theme.line }, settings.method === k && { backgroundColor: theme.brassSoft }]}>
+            <T>{v}</T>
+          </Pressable>
+        ))}
+        <Row>
+          <T>Asr</T>
+          <View style={[styles.seg, { borderColor: theme.line }]}>
+            {['Shafi', 'Hanafi'].map((m) => (
+              <Pressable key={m} onPress={() => update({ madhab: m })} style={[styles.segBtn, settings.madhab === m && { backgroundColor: theme.brass }]}>
+                <T style={{ fontSize: 13, color: settings.madhab === m ? theme.bg : theme.fg }}>{m === 'Shafi' ? 'Standard' : 'Hanafi'}</T>
+              </Pressable>
+            ))}
+          </View>
+        </Row>
+      </Group>
+
+      <Group label="Reminders" theme={theme}>
+        <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+          <T>Minutes after each prayer</T>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            {OFFSETS.map((o) => (
+              <Pressable key={o} onPress={() => update({ offset: o })}
+                style={[styles.chip, { borderColor: settings.offset === o ? theme.brass : theme.line }, settings.offset === o && { backgroundColor: theme.brassSoft }]}>
+                <T style={{ fontSize: 13 }}>{o} min</T>
+              </Pressable>
+            ))}
+          </View>
+        </Row>
+        {PRAYERS.map((p) => (
+          <Row key={p.key}>
+            <T>After {p.name}</T>
+            <Switch value={!!settings.prayers[p.key]} onValueChange={(v) => update({ prayers: { ...settings.prayers, [p.key]: v } })}
+              trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+          </Row>
+        ))}
+        <Row>
+          <View style={{ flex: 1 }}><T>Daily tasbeeh</T><T style={{ color: theme.muted, fontSize: 12.5 }}>9:00 AM · 2:30 PM · 10:00 PM</T></View>
+          <Switch value={settings.daily} onValueChange={(v) => update({ daily: v })} trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+        </Row>
+        <Row>
+          <T>Vibrate on each count</T>
+          <Switch value={settings.haptics} onValueChange={(v) => update({ haptics: v })} trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+        </Row>
+      </Group>
+
+      <Text style={{ color: theme.muted, fontSize: 12.5, lineHeight: 18, fontFamily: FONTS.ui }}>
+        Times are calculated from your location and may differ by a few minutes from your local mosque. Reminders are scheduled a week ahead and refresh automatically.
+      </Text>
+    </Sheet>
+  );
+}
+
+const styles = StyleSheet.create({
+  lbl: { fontFamily: FONTS.uiBold, fontSize: 11.5, letterSpacing: 1.2 },
+  grid: { flexDirection: 'row', borderWidth: 1, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 4 },
+  cell: { flex: 1, alignItems: 'center', gap: 3 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
+  opt: { paddingVertical: 12, paddingHorizontal: 22, borderTopWidth: 1 },
+  tm: { width: 74, fontFamily: FONTS.numMed, fontSize: 15, fontVariant: ['tabular-nums'] },
+  btn: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
+  chip: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
+  seg: { flexDirection: 'row', borderWidth: 1, borderRadius: 999, padding: 3 },
+  segBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999 },
+});
