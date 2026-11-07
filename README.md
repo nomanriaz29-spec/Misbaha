@@ -1,6 +1,6 @@
 # Misbaha — Tasbeeh counter with prayer reminders
 
-One codebase for **Android and iOS**, built with Expo (SDK 56, React Native).
+One codebase for **Android and iOS**, built with Expo (SDK 58, React Native 0.88).
 
 ## What the app does
 
@@ -48,13 +48,13 @@ assets/                    icon, adaptive icon, splash, notification icon
 
 ## 1. Run it on your phone (about 10 minutes)
 
-You need [Node.js LTS](https://nodejs.org) on your computer.
+You need [Node.js](https://nodejs.org) 22.13 or newer (an even-numbered version: 22, 24 or 26) on your computer.
 
 ```bash
 git clone https://github.com/nomanriaz29-spec/misbaha
 cd misbaha
 npm install
-npx expo install --fix      # pins every package to the version tested with Expo SDK 56
+npx expo install --fix      # pins every package to the version tested with Expo SDK 58
 npx expo start
 ```
 

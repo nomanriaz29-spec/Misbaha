@@ -16,7 +16,7 @@
     "register-iphone": "eas device:create"
   },
   "dependencies": {
-    "expo": "~56.0.0",
+    "expo": "~58.0.0",
     "react": "*",
     "react-native": "*",
     "@bacons/apple-targets": "latest",
