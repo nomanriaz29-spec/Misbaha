@@ -134,6 +134,9 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
                 : alert.sound === 'alarm' ? 'A short alarm tone plays when the prayer begins.' : 'Your phone’s standard notification sound.'}
               {Platform.OS === 'ios' ? ' On iPhone, sounds play only when the ring switch is on.' : ''}
             </T>
+            {alert.sound === 'azan' && (
+              <T style={{ color: theme.muted, fontSize: 12.5 }}>Azan recorded at the Prophet’s Mosque, Madinah, by ejaz215 (CC BY 3.0).</T>
+            )}
           </Row>
         )}
         {alert.on && Platform.OS === 'android' && (

@@ -8,9 +8,9 @@ try {
 }
 
 export const SOUND_FILES = {
-  azan: require('../../assets/sounds/azan.wav'),        // 17 s opening, also the notification sound
+  azan: require('../../assets/sounds/azan.wav'),        // 18 s opening, also the notification sound
   alarm: require('../../assets/sounds/alarm.wav'),
-  full: require('../../assets/sounds/azan-full.m4a'),   // complete azan, 2 min 34 s
+  full: require('../../assets/sounds/azan-full.m4a'),   // complete azan, 3 min 6 s
 };
 
 let player = null;
