@@ -11,10 +11,11 @@ One codebase for **Android and iOS**, built with Expo (SDK 58, React Native 0.88
 - **Duas menu** (Duas button). 33 duas in 7 groups by what they're for: daily life, worry & hardship, forgiveness, family, knowledge & provision, health, and faith & guidance. Each has Arabic, transliteration, meaning, when to read it and its Quran or hadith source, and opens in the counter.
 - **Location permission at first launch.** The app calculates prayer times anywhere in the world with the [adhan](https://github.com/batoulapps/adhan-js) library. It picks the right calculation method for the country automatically (UAE, Umm al-Qura, Karachi + Hanafi, ISNA and others). Users can change the method and Asr school. If they decline location, they pick a city instead.
 - **Real notifications on the phone.** These are local notifications, so they need no server and work offline.
-  - 15 minutes after each of the 5 prayers. The delay can be set to 5, 10, 15, 20 or 30 minutes, and each prayer can be turned off.
+  - **At each prayer time, an alert with the azan** (default), an alarm tone or the standard sound, chosen under **Prayers → Prayer time alert**. The notification plays the 17-second opening of the azan, which keeps it under iOS's 30-second limit. Tapping it plays the full azan in the app. Recording details are in [CREDITS.md](CREDITS.md).
+  - A tasbeeh reminder 15 minutes after each of the 5 prayers. The delay can be set to 5, 10, 15, 20 or 30 minutes, and each prayer can be turned off.
   - 3 daily tasbeeh reminders at 9:00 AM, 2:30 PM and 10:00 PM.
   - Tapping a notification opens the matching routine.
-  - Reminders are scheduled 7 days ahead and refreshed every time the app opens and by a background task. iOS allows at most 64 pending notifications, and the app uses about 39.
+  - Alerts and reminders are scheduled 6 days ahead (7 with alerts off) and refreshed every time the app opens and by a background task. That keeps the app under iOS's limit of 64 pending notifications.
 - **Qibla finder** (compass button in the top bar). The live compass turns with the phone using its heading sensor. It shows the bearing and distance to the Kaaba, turns green and vibrates when you face the Qibla, and prompts you to calibrate when the reading is unreliable.
 - **Daily history** (tap "Today · History" in the top left). It shows your current and best streak, the last 7 days and all-time totals, plus a month calendar shaded by how much you did each day. Tap any day to see which routines you completed (After Salah 0–5, morning, evening, before sleep) and a count for every dhikr and dua. Two years of history are kept on the phone.
 - **Accurate prayer times that follow you.** Times are calculated on the phone with the [adhan](https://github.com/batoulapps/adhan-js) library. When the app opens, it checks (without asking again) whether you've moved more than 15 km and updates the place and the country's method. **Fine-tune times** in Prayers lets you shift any prayer by ±30 minutes to match your masjid exactly.
@@ -100,7 +101,7 @@ You don't need a Mac. EAS builds iOS in the cloud.
 3. **Data safety form:** declare *Approximate location*: collected, *processed ephemerally*, *not shared*, purpose *App functionality*. The Android city-name lookup goes through Google's geocoder, so declaring it is the safe choice. Declare nothing else. There is no account, so answer *no* to data deletion requests.
    **Content rating:** answer the questionnaire. Everything is "no", which gives a rating of Everyone / 3+.
 4. **Privacy policy URL:** host `PRIVACY.md` somewhere public. A free GitHub Pages or Notion page works.
-5. The app doesn't request exact-alarm or background-location permissions, so you won't need to fill in those declaration forms. On Android, a reminder can arrive a minute or two after its scheduled time while the phone is idle.
+5. **Exact alarms:** the app requests `SCHEDULE_EXACT_ALARM` so the azan plays at the exact prayer time. In Play Console's **App content → Exact alarm** declaration, choose that the app delivers time-critical alerts the user turns on (prayer times). On Android 14 and later, users allow it under Settings → Apps → Misbaha → Alarms & reminders, and the app links there from Prayers. The app never requests background location.
 6. New personal developer accounts must run a **closed test with at least 12 testers for 14 days** before Google allows a production release. Check the current rule in Play Console.
 7. Upload with `npm run submit:android`, or drag the `.aab` into Play Console.
 

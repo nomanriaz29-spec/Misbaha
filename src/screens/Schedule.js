@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, Switch, StyleSheet, ActivityIndicator, Linking } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, Pressable, Switch, StyleSheet, ActivityIndicator, Linking, Platform } from 'react-native';
 import Sheet, { Group } from '../components/Sheet';
 import { getTimes, fmtTime, METHODS, PRAYERS, defaultsForCountry } from '../lib/prayer';
 import { detectLocation, CITIES } from '../lib/location';
 import { DAILY } from '../data/adhkar';
 import { FONTS } from '../theme';
+import { ALERT_SOUNDS } from '../lib/notifications';
+import { playSound, stopSound } from '../lib/sounds';
 
 const OFFSETS = [5, 10, 15, 20, 30];
 
@@ -28,6 +30,14 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [picker, setPicker] = useState(null); // 'method' | 'city' | null
+  const [preview, setPreview] = useState(null); // sound being previewed
+  useEffect(() => { if (!visible) { stopSound(); setPreview(null); } }, [visible]);
+  const alert = settings.alert || { on: true, sound: 'azan' };
+  const togglePreview = async (kind) => {
+    if (preview === kind) { stopSound(); setPreview(null); return; }
+    const ok = await playSound(kind, () => setPreview(null));
+    setPreview(ok ? kind : null);
+  };
 
   const times = useMemo(() => getTimes(settings.location, settings), [settings, visible]);
   const plan = useMemo(() => buildPlan(settings), [settings, visible]);
@@ -171,9 +181,55 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         })}
       </Group>
 
+      <Group label="Prayer time alert" theme={theme}>
+        <Row first>
+          <View style={{ flex: 1 }}>
+            <T>Alert at each prayer time</T>
+            <T style={{ color: theme.muted, fontSize: 14 }}>Plays when the prayer begins</T>
+          </View>
+          <Switch value={alert.on} onValueChange={(v) => update({ alert: { ...alert, on: v } })}
+            trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+        </Row>
+        {alert.on && (
+          <Row style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+            <T>Sound</T>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {Object.entries(ALERT_SOUNDS).map(([k, s]) => {
+                const on = alert.sound === k;
+                return (
+                  <Pressable key={k} onPress={() => update({ alert: { ...alert, sound: k } })} accessibilityRole="radio" accessibilityState={{ checked: on }}
+                    style={[styles.soundOpt, { borderColor: on ? theme.brass : theme.line }, on && { backgroundColor: theme.brassSoft }]}>
+                    <T style={{ fontFamily: on ? FONTS.uiBold : FONTS.ui }}>{s.label}{k === 'azan' ? ' ★' : ''}</T>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {alert.sound !== 'standard' && (
+              <Pressable onPress={() => togglePreview(alert.sound === 'azan' ? 'azan' : 'alarm')} style={[styles.btn, { borderColor: theme.line, alignSelf: 'flex-start' }]}>
+                <T style={{ fontSize: 15 }}>{preview ? '■  Stop' : `▶  Play ${ALERT_SOUNDS[alert.sound].label.toLowerCase()}`}</T>
+              </Pressable>
+            )}
+            <T style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
+              {alert.sound === 'azan'
+                ? 'The notification plays the opening of the azan. Tap it to hear the full azan in the app.'
+                : alert.sound === 'alarm' ? 'A short alarm tone plays when the prayer begins.' : 'Your phone’s standard notification sound.'}
+              {Platform.OS === 'ios' ? ' On iPhone, sounds play only when the ring switch is on.' : ''}
+            </T>
+          </Row>
+        )}
+        {alert.on && Platform.OS === 'android' && (
+          <Row style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+            <T style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
+              For the alert to play exactly on time, allow “Alarms & reminders” for Misbaha in your phone’s settings.
+            </T>
+            <Btn label="Open phone settings" onPress={() => Linking.openSettings()} />
+          </Row>
+        )}
+      </Group>
+
       <Group label="Reminders" theme={theme}>
         <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-          <T>Minutes after each prayer</T>
+          <T>Tasbeeh reminder, minutes after each prayer</T>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             {OFFSETS.map((o) => (
               <Pressable key={o} onPress={() => update({ offset: o })}
@@ -185,7 +241,10 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         </Row>
         {PRAYERS.map((p) => (
           <Row key={p.key}>
-            <T>After {p.name}</T>
+            <View style={{ flex: 1 }}>
+              <T>{p.name}</T>
+              <T style={{ color: theme.muted, fontSize: 13 }}>{alert.on ? 'Prayer time alert and tasbeeh reminder' : 'Tasbeeh reminder'}</T>
+            </View>
             <Switch value={!!settings.prayers[p.key]} onValueChange={(v) => update({ prayers: { ...settings.prayers, [p.key]: v } })}
               trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
           </Row>
@@ -219,5 +278,6 @@ const styles = StyleSheet.create({
   seg: { flexDirection: 'row', borderWidth: 1, borderRadius: 999, padding: 3 },
   segBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999 },
   stepper: { flexDirection: 'row', alignItems: 'center' },
+  soundOpt: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 12, borderWidth: 1 },
   stepBtn: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

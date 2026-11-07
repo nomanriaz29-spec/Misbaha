@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, View, Text, Pressable } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -8,7 +8,8 @@ import { useFonts, Amiri_400Regular } from '@expo-google-fonts/amiri';
 import { Fraunces_300Light, Fraunces_500Medium } from '@expo-google-fonts/fraunces';
 import { Figtree_400Regular, Figtree_600SemiBold } from '@expo-google-fonts/figtree';
 
-import { useTheme } from './src/theme';
+import { useTheme, FONTS } from './src/theme';
+import { playSound, stopSound } from './src/lib/sounds';
 import { loadSettings, saveSettings, loadProgress, saveProgress, todayKey } from './src/lib/storage';
 import { rescheduleAll, hasNotificationPermission, requestNotificationPermission, setupChannel } from './src/lib/notifications';
 import { registerBackgroundRefresh } from './src/lib/background';
@@ -34,6 +35,7 @@ export default function App() {
   const [notifOn, setNotifOn] = useState(false);
   const [sheet, setSheet] = useState(null); // 'lib' | 'sched' | null
   const [tick, setTick] = useState(0);
+  const [azanPlaying, setAzanPlaying] = useState(false);
   const settingsRef = useRef(null);
   settingsRef.current = settings;
 
@@ -113,8 +115,12 @@ export default function App() {
     const id = response.notification.request.identifier + ':' + response.notification.date;
     if (handled.current === id) return;
     handled.current = id;
-    const open = response.notification.request.content.data?.open;
-    if (isValidKey(open)) { setProgress((cur) => ({ ...cur, cur: open })); setSheet(null); }
+    const data = response.notification.request.content.data || {};
+    if (isValidKey(data.open)) { setProgress((cur) => ({ ...cur, cur: data.open })); setSheet(null); }
+    // Tapped a prayer-time alert: play the complete azan (the notification only carries its opening).
+    if (data.azan === true && settingsRef.current?.alert?.sound === 'azan') {
+      playSound('full', () => setAzanPlaying(false)).then((ok) => setAzanPlaying(ok));
+    }
   }, [response, progress, setProgress]);
 
   if (!ready) return <View style={{ flex: 1, backgroundColor: theme.bg }} />;
@@ -149,6 +155,14 @@ export default function App() {
         onOpenQibla={() => setSheet('qibla')}
         onOpenHistory={() => setSheet('history')}
       />
+      {azanPlaying && (
+        <Pressable onPress={() => { stopSound(); setAzanPlaying(false); }} accessibilityRole="button" accessibilityLabel="Stop the azan"
+          style={{ position: 'absolute', left: 16, right: 16, bottom: 110, paddingVertical: 14, paddingHorizontal: 18, borderRadius: 18,
+            backgroundColor: theme.brass, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: theme.bg, fontFamily: FONTS.uiBold, fontSize: 16 }}>Azan playing</Text>
+          <Text style={{ color: theme.bg, fontFamily: FONTS.ui, fontSize: 15 }}>Tap to stop</Text>
+        </Pressable>
+      )}
       <History visible={sheet === 'history'} onClose={() => setSheet(null)} history={history} theme={theme} />
       <Duas visible={sheet === 'duas'} onClose={() => setSheet(null)} onChoose={choose} theme={theme} />
       <Qibla visible={sheet === 'qibla'} onClose={() => setSheet(null)} settings={settings} theme={theme} />
