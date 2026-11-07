@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS = {
   onboarded: false,
   methodAuto: true, // follow the country's method until the user picks one
   adjust: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 }, // minutes
+  alert: { on: true, sound: 'azan' }, // alert at each prayer time: 'azan' | 'alarm' | 'standard'
 };
 const OFFSETS = [5, 10, 15, 20, 30];
 
@@ -44,7 +45,7 @@ export function cleanLocation(l) {
 // Never trust stored JSON: keep only known fields with valid values.
 function cleanSettings(s) {
   const d = DEFAULT_SETTINGS;
-  if (!s || typeof s !== 'object') return { ...d, prayers: { ...d.prayers }, adjust: { ...d.adjust } };
+  if (!s || typeof s !== 'object') return { ...d, prayers: { ...d.prayers }, adjust: { ...d.adjust }, alert: { ...d.alert } };
   const prayers = {};
   for (const k of Object.keys(d.prayers)) prayers[k] = typeof s.prayers?.[k] === 'boolean' ? s.prayers[k] : d.prayers[k];
   const location = cleanLocation(s.location);
@@ -62,6 +63,10 @@ function cleanSettings(s) {
       const v = s.adjust?.[k];
       return [k, Number.isInteger(v) ? Math.max(-30, Math.min(30, v)) : 0];
     })),
+    alert: {
+      on: s.alert?.on !== false,
+      sound: ['azan', 'alarm', 'standard'].includes(s.alert?.sound) ? s.alert.sound : 'azan',
+    },
   };
 }
 
