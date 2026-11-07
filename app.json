@@ -33,7 +33,12 @@
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
         "POST_NOTIFICATIONS",
+<<<<<<< Updated upstream
         "SCHEDULE_EXACT_ALARM"
+=======
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+>>>>>>> Stashed changes
       ],
       "blockedPermissions": [
         "android.permission.ACCESS_FINE_LOCATION",
@@ -71,7 +76,30 @@
       ],
       "expo-background-task",
       "expo-font",
-      "@bacons/apple-targets"
-    ]
+      "@bacons/apple-targets",
+      "expo-status-bar"
+    ],
+    "extra": {
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.nomanriaz.misbaha.prayerwidget",
+                  "targetName": "PrayerWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.nomanriaz.misbaha"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "3c8133b8-823c-4a51-8868-5ab493b08bc3"
+      }
+    }
   }
 }
