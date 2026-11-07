@@ -4,7 +4,7 @@ import Sheet, { Group } from '../components/Sheet';
 import { dateKey, stats } from '../lib/history';
 import { labelFor } from '../lib/recommend';
 import { SETS } from '../data/adhkar';
-import { FONTS } from '../theme';
+import { FONTS, FILL } from '../theme';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -69,7 +69,7 @@ export default function History({ visible, onClose, history, theme }) {
               <Pressable key={i} disabled={future} onPress={() => setSel(k)} style={styles.cell}
                 accessibilityLabel={`${d.getDate()} ${MONTHS[d.getMonth()]}, ${n} counts`}>
                 <View style={[styles.dayBox, { borderColor: selected ? theme.fg : todayCell ? theme.brass : 'transparent' }]}>
-                  {lv > 0 && <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 9 }]} />}
+                  {lv > 0 && <View style={[FILL, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 9 }]} />}
                   <Text style={{ fontFamily: FONTS.ui, fontSize: 13, color: future ? theme.line : lv >= 2 ? theme.bg : theme.fg, fontVariant: ['tabular-nums'] }}>{d.getDate()}</Text>
                 </View>
               </Pressable>
@@ -80,7 +80,7 @@ export default function History({ visible, onClose, history, theme }) {
           <Text style={[styles.lg, { color: theme.muted }]}>Less</Text>
           {[0, 1, 2, 3].map((lv) => (
             <View key={lv} style={[styles.sw, { borderColor: theme.line }]}>
-              {lv > 0 && <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 3 }]} />}
+              {lv > 0 && <View style={[FILL, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 3 }]} />}
             </View>
           ))}
           <Text style={[styles.lg, { color: theme.muted }]}>More</Text>

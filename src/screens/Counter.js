@@ -8,7 +8,7 @@ import BeadRing from '../components/BeadRing';
 import { DHIKR } from '../data/adhkar';
 import { fmtTime } from '../lib/prayer';
 import { itemFor, labelFor, recommend } from '../lib/recommend';
-import { FONTS } from '../theme';
+import { FONTS, FILL } from '../theme';
 
 const blank = { step: 0, c: 0, extra: false };
 
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   ar: { fontFamily: FONTS.ar, fontSize: 36, lineHeight: 60, textAlign: 'center', writingDirection: 'rtl', maxWidth: 360 },
   arLong: { fontSize: 23, lineHeight: 40 },
   arVeryLong: { fontSize: 18, lineHeight: 32 },
-  center: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  center: { ...FILL, alignItems: 'center', justifyContent: 'center' },
   num: { fontFamily: FONTS.num, fontVariant: ['tabular-nums'] },
   of: { fontFamily: FONTS.ui, fontSize: 12.5, letterSpacing: 1 },
   tr: { fontFamily: FONTS.uiBold, fontSize: 16, textAlign: 'center' },

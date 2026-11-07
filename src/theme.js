@@ -20,3 +20,7 @@ export const FONTS = {
 export function useTheme() {
   return useColorScheme() === 'dark' ? dark : light;
 }
+
+// Fills the parent. Written out explicitly instead of StyleSheet.absoluteFill(Object),
+// which newer React Native versions deprecate.
+export const FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 };

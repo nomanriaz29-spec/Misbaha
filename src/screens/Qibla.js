@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import Sheet from '../components/Sheet';
 import { qiblaBearing, distanceKm, compassPoint, angleDiff } from '../lib/qibla';
-import { FONTS } from '../theme';
+import { FONTS, FILL } from '../theme';
 
 const ALIGN_DEG = 5;
 
@@ -71,10 +71,10 @@ export default function Qibla({ visible, onClose, settings, theme }) {
       <View style={{ alignItems: 'center', gap: 16 }}>
         <View style={{ width: S, height: S }}>
           {/* fixed pointer: the top of the phone */}
-          <Svg width={S} height={S} style={StyleSheet.absoluteFill}>
+          <Svg width={S} height={S} style={FILL}>
             <Path d={`M${S / 2 - 9} 6 L${S / 2 + 9} 6 L${S / 2} 22 Z`} fill={aligned ? theme.ok : theme.fg} />
           </Svg>
-          <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: spin }] }]}>
+          <Animated.View style={[FILL, { transform: [{ rotate: spin }] }]}>
             <Svg width={S} height={S} viewBox="0 0 300 300">
               <Circle cx={150} cy={150} r={122} fill={theme.surface} stroke={ringColor} strokeWidth={aligned ? 4 : 1.5} />
               {Array.from({ length: 72 }, (_, i) => {
