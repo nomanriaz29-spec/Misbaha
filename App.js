@@ -17,6 +17,7 @@ import Library from './src/screens/Library';
 import Schedule, { buildPlan } from './src/screens/Schedule';
 import Onboarding from './src/screens/Onboarding';
 import Qibla from './src/screens/Qibla';
+import Duas from './src/screens/Duas';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -113,9 +114,12 @@ export default function App() {
         settings={settings}
         next={next}
         onOpenLibrary={() => setSheet('lib')}
+        onChoose={choose}
+        onOpenDuas={() => setSheet('duas')}
         onOpenSchedule={() => setSheet('sched')}
         onOpenQibla={() => setSheet('qibla')}
       />
+      <Duas visible={sheet === 'duas'} onClose={() => setSheet(null)} onChoose={choose} theme={theme} />
       <Qibla visible={sheet === 'qibla'} onClose={() => setSheet(null)} settings={settings} theme={theme} />
       <Library visible={sheet === 'lib'} onClose={() => setSheet(null)} onChoose={choose} progress={progress} theme={theme} />
       <Schedule
