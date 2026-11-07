@@ -48,7 +48,7 @@ export default function Onboarding({ theme, onDone }) {
             {CITIES.map((c, i) => (
               <Pressable key={c.name} onPress={() => { setLoc(c); setStep('notify'); }}
                 style={{ paddingVertical: 14, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: theme.line }}>
-                <Text style={{ color: theme.fg, fontFamily: FONTS.ui, fontSize: 16 }}>{c.name}</Text>
+                <Text style={{ color: theme.fg, fontFamily: FONTS.ui, fontSize: 18 }}>{c.name}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -93,11 +93,11 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
   ar: { fontFamily: FONTS.ar, fontSize: 30, lineHeight: 50 },
   h: { fontFamily: FONTS.numMed, fontSize: 28, textAlign: 'center', lineHeight: 34 },
-  p: { fontFamily: FONTS.ui, fontSize: 15, lineHeight: 22, textAlign: 'center', maxWidth: 340 },
+  p: { fontFamily: FONTS.ui, fontSize: 17, lineHeight: 25, textAlign: 'center', maxWidth: 340 },
   actions: { alignSelf: 'stretch', gap: 6, marginTop: 12 },
   primary: { height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  pTxt: { fontFamily: FONTS.uiBold, fontSize: 16 },
+  pTxt: { fontFamily: FONTS.uiBold, fontSize: 18 },
   secondary: { paddingVertical: 12, alignItems: 'center' },
-  sTxt: { fontFamily: FONTS.ui, fontSize: 15 },
+  sTxt: { fontFamily: FONTS.ui, fontSize: 17 },
   list: { flex: 1, borderWidth: 1, borderRadius: 16 },
 });

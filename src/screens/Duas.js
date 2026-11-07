@@ -19,7 +19,7 @@ export default function Duas({ visible, onClose, onChoose, theme }) {
         {cats.map((c) => (
           <Pressable key={c.id} onPress={() => setCat(c.id)}
             style={[styles.chip, { borderColor: cat === c.id ? theme.brass : theme.line }, cat === c.id && { backgroundColor: theme.brassSoft }]}>
-            <Text style={{ color: theme.fg, fontFamily: FONTS.ui, fontSize: 13.5 }}>{c.name}</Text>
+            <Text style={{ color: theme.fg, fontFamily: FONTS.ui, fontSize: 15.5 }}>{c.name}</Text>
           </Pressable>
         ))}
         <View style={{ width: 10 }} />
@@ -36,20 +36,20 @@ export default function Duas({ visible, onClose, onChoose, theme }) {
                   style={[styles.row, { borderTopColor: theme.line, borderTopWidth: i ? 1 : 0 }, isOpen && { backgroundColor: theme.bg }]}>
                   <View style={styles.line}>
                     <Text style={[styles.t, { color: theme.fg }]}>{d.title}</Text>
-                    <Text style={{ color: theme.muted, fontSize: 18 }}>{isOpen ? '−' : '+'}</Text>
+                    <Text style={{ color: theme.muted, fontSize: 20.5 }}>{isOpen ? '−' : '+'}</Text>
                   </View>
                   <Text style={[styles.s, { color: theme.muted }]}>{d.for}</Text>
                   {isOpen && (
                     <View style={{ gap: 10, marginTop: 8 }}>
                       <Text style={[styles.ar, { color: theme.fg }]}>{d.ar}</Text>
                       <Text style={[styles.trn, { color: theme.fg }]}>{d.tr}</Text>
-                      <Text style={[styles.s, { color: theme.fg, fontSize: 14, lineHeight: 21 }]}>{d.en}</Text>
+                      <Text style={[styles.s, { color: theme.fg, fontSize: 16, lineHeight: 24 }]}>{d.en}</Text>
                       <View style={[styles.meta, { borderColor: theme.line }]}>
                         <Text style={[styles.s, { color: theme.muted }]}><Text style={{ fontFamily: FONTS.uiBold }}>When: </Text>{d.when}</Text>
                         <Text style={[styles.s, { color: theme.muted }]}><Text style={{ fontFamily: FONTS.uiBold }}>Source: </Text>{d.ref}</Text>
                       </View>
                       <Pressable onPress={() => onChoose('dua:' + id)} style={[styles.go, { backgroundColor: theme.brass }]}>
-                        <Text style={{ color: theme.bg, fontFamily: FONTS.uiBold, fontSize: 14 }}>
+                        <Text style={{ color: theme.bg, fontFamily: FONTS.uiBold, fontSize: 16 }}>
                           Read with counter{d.n > 1 ? ` (×${d.n})` : ''}
                         </Text>
                       </Pressable>
@@ -67,14 +67,14 @@ export default function Duas({ visible, onClose, onChoose, theme }) {
 
 const styles = StyleSheet.create({
   chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1 },
-  lbl: { fontFamily: FONTS.uiBold, fontSize: 11.5, letterSpacing: 1.2 },
+  lbl: { fontFamily: FONTS.uiBold, fontSize: 13, letterSpacing: 1.2 },
   list: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
   row: { paddingVertical: 13, paddingHorizontal: 14, gap: 3 },
   line: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  t: { fontFamily: FONTS.uiBold, fontSize: 15, flex: 1 },
-  s: { fontFamily: FONTS.ui, fontSize: 12.5, lineHeight: 18 },
-  ar: { fontFamily: FONTS.ar, fontSize: 23, lineHeight: 42, textAlign: 'right', writingDirection: 'rtl' },
-  trn: { fontFamily: FONTS.uiBold, fontSize: 14, lineHeight: 20 },
+  t: { fontFamily: FONTS.uiBold, fontSize: 17, flex: 1 },
+  s: { fontFamily: FONTS.ui, fontSize: 14, lineHeight: 20.5 },
+  ar: { fontFamily: FONTS.ar, fontSize: 26, lineHeight: 42, textAlign: 'right', writingDirection: 'rtl' },
+  trn: { fontFamily: FONTS.uiBold, fontSize: 16, lineHeight: 23 },
   meta: { gap: 4, borderTopWidth: 1, paddingTop: 8 },
   go: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 999 },
 });

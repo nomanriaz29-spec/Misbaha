@@ -52,11 +52,11 @@ export default function History({ visible, onClose, history, theme }) {
       <View style={[styles.cal, { backgroundColor: theme.surface, borderColor: theme.line }]}>
         <View style={styles.calHead}>
           <Pressable onPress={() => shift(-1)} hitSlop={10} accessibilityLabel="Previous month" style={styles.nav}>
-            <Text style={{ color: theme.fg, fontSize: 20 }}>‹</Text>
+            <Text style={{ color: theme.fg, fontSize: 23 }}>‹</Text>
           </Pressable>
           <Text style={[styles.month, { color: theme.fg }]}>{MONTHS[month.getMonth()]} {month.getFullYear()}</Text>
           <Pressable onPress={() => canNext && shift(1)} hitSlop={10} accessibilityLabel="Next month" style={[styles.nav, !canNext && { opacity: 0.25 }]}>
-            <Text style={{ color: theme.fg, fontSize: 20 }}>›</Text>
+            <Text style={{ color: theme.fg, fontSize: 23 }}>›</Text>
           </Pressable>
         </View>
         <View style={styles.grid}>
@@ -70,7 +70,7 @@ export default function History({ visible, onClose, history, theme }) {
                 accessibilityLabel={`${d.getDate()} ${MONTHS[d.getMonth()]}, ${n} counts`}>
                 <View style={[styles.dayBox, { borderColor: selected ? theme.fg : todayCell ? theme.brass : 'transparent' }]}>
                   {lv > 0 && <View style={[FILL, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 9 }]} />}
-                  <Text style={{ fontFamily: FONTS.ui, fontSize: 13, color: future ? theme.line : lv >= 2 ? theme.bg : theme.fg, fontVariant: ['tabular-nums'] }}>{d.getDate()}</Text>
+                  <Text style={{ fontFamily: FONTS.ui, fontSize: 15, color: future ? theme.line : lv >= 2 ? theme.bg : theme.fg, fontVariant: ['tabular-nums'] }}>{d.getDate()}</Text>
                 </View>
               </Pressable>
             );
@@ -137,9 +137,9 @@ export default function History({ visible, onClose, history, theme }) {
 function Stat({ theme, k, v, unit, accent }) {
   return (
     <View style={[styles.stat, { backgroundColor: theme.surface, borderColor: accent ? theme.brass : theme.line }]}>
-      <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONTS.ui }}>{k}</Text>
-      <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: theme.fg, fontSize: 20, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>{v}</Text>
-      {unit ? <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONTS.ui }}>{unit}</Text> : null}
+      <Text style={{ color: theme.muted, fontSize: 12.5, fontFamily: FONTS.ui }}>{k}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: theme.fg, fontSize: 23, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>{v}</Text>
+      {unit ? <Text style={{ color: theme.muted, fontSize: 12.5, fontFamily: FONTS.ui }}>{unit}</Text> : null}
     </View>
   );
 }
@@ -150,19 +150,19 @@ const styles = StyleSheet.create({
   cal: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 8 },
   calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   nav: { width: 36, height: 32, alignItems: 'center', justifyContent: 'center' },
-  month: { fontFamily: FONTS.numMed, fontSize: 17 },
+  month: { fontFamily: FONTS.numMed, fontSize: 19.5 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  wd: { width: `${100 / 7}%`, textAlign: 'center', fontFamily: FONTS.ui, fontSize: 11, paddingBottom: 4 },
+  wd: { width: `${100 / 7}%`, textAlign: 'center', fontFamily: FONTS.ui, fontSize: 12.5, paddingBottom: 4 },
   cell: { width: `${100 / 7}%`, aspectRatio: 1, padding: 2 },
   dayBox: { flex: 1, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   legend: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
-  lg: { fontFamily: FONTS.ui, fontSize: 11 },
+  lg: { fontFamily: FONTS.ui, fontSize: 12.5 },
   sw: { width: 12, height: 12, borderRadius: 3, borderWidth: 1, overflow: 'hidden' },
   dayHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  dayTitle: { fontFamily: FONTS.numMed, fontSize: 19 },
-  dayTotal: { fontFamily: FONTS.numMed, fontSize: 19, fontVariant: ['tabular-nums'] },
+  dayTitle: { fontFamily: FONTS.numMed, fontSize: 21.5 },
+  dayTotal: { fontFamily: FONTS.numMed, fontSize: 21.5, fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
-  rowT: { fontFamily: FONTS.ui, fontSize: 15 },
-  rowV: { fontFamily: FONTS.uiBold, fontSize: 14, fontVariant: ['tabular-nums'] },
-  empty: { fontFamily: FONTS.ui, fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  rowT: { fontFamily: FONTS.ui, fontSize: 17 },
+  rowV: { fontFamily: FONTS.uiBold, fontSize: 16, fontVariant: ['tabular-nums'] },
+  empty: { fontFamily: FONTS.ui, fontSize: 15, lineHeight: 21.5, textAlign: 'center' },
 });

@@ -97,7 +97,7 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
           </Pressable>
           <Pressable onPress={onOpenQibla} accessibilityRole="button" accessibilityLabel="Qibla finder"
             style={({ pressed }) => [styles.iconBtn, { backgroundColor: theme.surface, borderColor: theme.line }, pressed && { opacity: 0.6 }]}>
-            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={theme.fg} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={theme.fg} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
               <Circle cx={12} cy={12} r={9.5} />
               <Path d="M15.5 8.5 13.4 13.4 8.5 15.5 10.6 10.6Z" fill={theme.brass} stroke={theme.brass} />
             </Svg>
@@ -140,7 +140,7 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
                 {k.set.steps.map(([id, cnt], i) => (
                   <View key={i} style={[styles.stepPill, { borderColor: i === k.step ? theme.brass : i < k.step ? 'transparent' : theme.line },
                     i === k.step && { backgroundColor: theme.brassSoft }]}>
-                    <Text style={{ fontSize: 11.5, fontFamily: FONTS.ui, color: i < k.step ? theme.ok : i === k.step ? theme.fg : theme.muted }}>
+                    <Text style={{ fontSize: 13, fontFamily: FONTS.ui, color: i < k.step ? theme.ok : i === k.step ? theme.fg : theme.muted }}>
                       {(i < k.step ? '✓ ' : '') + DHIKR[id].tr.split(',')[0].split(' ').slice(0, 2).join(' ') + ' ×' + cnt}
                     </Text>
                   </View>
@@ -155,12 +155,12 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
       </Pressable>
 
       <View style={styles.bar}>
-        <BarBtn theme={theme} label="Undo" onPress={undo} icon={<Path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />} />
-        <BarBtn theme={theme} label={armed ? 'Tap again' : 'Reset'} warn={armed} onPress={reset} icon={<Path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" />} />
-        <BarBtn theme={theme} label="Prayers" onPress={onOpenSchedule} icon={<Path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0" />} />
-        <BarBtn theme={theme} label="Duas" onPress={onOpenDuas} icon={<Path d="M7 20c-1.7-1.3-3-3.3-3-6V9.5a1.5 1.5 0 0 1 3 0V13M17 20c1.7-1.3 3-3.3 3-6V9.5a1.5 1.5 0 0 0-3 0V13M7 13V5.5a1.5 1.5 0 0 1 3 0V12M17 13V5.5a1.5 1.5 0 0 0-3 0V12" />} />
         <BarBtn theme={theme} label="Adhkar" primary onPress={onOpenLibrary}
           icon={<>{[[12, 5], [5, 12], [19, 12], [12, 19]].map(([x, y]) => <Circle key={x + '' + y} cx={x} cy={y} r={2} />)}</>} />
+        <BarBtn theme={theme} label="Duas" onPress={onOpenDuas} icon={<Path d="M7 20c-1.7-1.3-3-3.3-3-6V9.5a1.5 1.5 0 0 1 3 0V13M17 20c1.7-1.3 3-3.3 3-6V9.5a1.5 1.5 0 0 0-3 0V13M7 13V5.5a1.5 1.5 0 0 1 3 0V12M17 13V5.5a1.5 1.5 0 0 0-3 0V12" />} />
+        <BarBtn theme={theme} label="Prayers" onPress={onOpenSchedule} icon={<Path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0" />} />
+        <BarBtn theme={theme} label={armed ? 'Tap again' : 'Reset'} warn={armed} onPress={reset} icon={<Path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" />} />
+        <BarBtn theme={theme} label="Undo" onPress={undo} icon={<Path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />} />
       </View>
     </SafeAreaView>
   );
@@ -170,7 +170,7 @@ function Pill({ theme, label, onPress, accent }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.pill, { borderColor: accent ? theme.brass : theme.line },
       accent && { backgroundColor: theme.brassSoft }, pressed && { opacity: 0.6 }]}>
-      <Text numberOfLines={1} style={{ color: theme.fg, fontFamily: FONTS.ui, fontSize: 13 }}>{label}</Text>
+      <Text numberOfLines={1} style={{ color: theme.fg, fontFamily: FONTS.ui, fontSize: 15 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -178,8 +178,8 @@ function Pill({ theme, label, onPress, accent }) {
 function BarBtn({ theme, label, onPress, icon, primary, warn }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.barBtn, primary && { backgroundColor: theme.surface, borderColor: theme.line, borderWidth: 1 }, pressed && { opacity: 0.6 }]}>
-      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={warn ? theme.brass : theme.fg} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">{icon}</Svg>
-      <Text style={{ fontSize: 11.5, fontFamily: FONTS.ui, color: warn ? theme.brass : primary ? theme.fg : theme.muted }}>{label}</Text>
+      <Svg width={27} height={27} viewBox="0 0 24 24" fill="none" stroke={warn ? theme.brass : theme.fg} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">{icon}</Svg>
+      <Text style={{ fontSize: 13, fontFamily: FONTS.ui, color: warn ? theme.brass : primary ? theme.fg : theme.muted }}>{label}</Text>
     </Pressable>
   );
 }
@@ -187,30 +187,30 @@ function BarBtn({ theme, label, onPress, icon, primary, warn }) {
 const styles = StyleSheet.create({
   wrap: { flex: 1, paddingHorizontal: 16 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingTop: 8 },
-  brand: { fontFamily: FONTS.numMed, fontSize: 20 },
-  small: { fontFamily: FONTS.ui, fontSize: 12.5, fontVariant: ['tabular-nums'] },
+  brand: { fontFamily: FONTS.numMed, fontSize: 25 },
+  small: { fontFamily: FONTS.ui, fontSize: 14, fontVariant: ['tabular-nums'] },
   topRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, maxWidth: '78%' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, flexShrink: 1 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 7, height: 7, borderRadius: 4 },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
-  ar: { fontFamily: FONTS.ar, fontSize: 36, lineHeight: 60, textAlign: 'center', writingDirection: 'rtl', maxWidth: 360 },
-  arLong: { fontSize: 23, lineHeight: 40 },
-  arVeryLong: { fontSize: 18, lineHeight: 32 },
+  ar: { fontFamily: FONTS.ar, fontSize: 42, lineHeight: 70, textAlign: 'center', writingDirection: 'rtl', maxWidth: 360 },
+  arLong: { fontSize: 27, lineHeight: 44 },
+  arVeryLong: { fontSize: 20.5, lineHeight: 32 },
   center: { ...FILL, alignItems: 'center', justifyContent: 'center' },
   num: { fontFamily: FONTS.num, fontVariant: ['tabular-nums'] },
-  of: { fontFamily: FONTS.ui, fontSize: 12.5, letterSpacing: 1 },
-  tr: { fontFamily: FONTS.uiBold, fontSize: 16, textAlign: 'center' },
-  mean: { fontFamily: FONTS.ui, fontSize: 13.5, lineHeight: 19, textAlign: 'center' },
+  of: { fontFamily: FONTS.ui, fontSize: 14, letterSpacing: 1 },
+  tr: { fontFamily: FONTS.uiBold, fontSize: 18, textAlign: 'center' },
+  mean: { fontFamily: FONTS.ui, fontSize: 15.5, lineHeight: 21.5, textAlign: 'center' },
   steps: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 },
   stepPill: { paddingVertical: 4, paddingHorizontal: 9, borderRadius: 999, borderWidth: 1 },
-  hint: { fontFamily: FONTS.ui, fontSize: 11.5, letterSpacing: 0.8 },
+  hint: { fontFamily: FONTS.ui, fontSize: 13, letterSpacing: 0.8 },
   done: { alignSelf: 'stretch', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 18, padding: 14 },
-  doneT: { fontFamily: FONTS.uiBold, fontSize: 16 },
+  doneT: { fontFamily: FONTS.uiBold, fontSize: 18 },
   doneBtns: { flexDirection: 'row', gap: 8 },
-  lbl: { fontFamily: FONTS.uiBold, fontSize: 11, letterSpacing: 1.2, marginTop: 4 },
+  lbl: { fontFamily: FONTS.uiBold, fontSize: 12.5, letterSpacing: 1.2, marginTop: 4 },
   recs: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 },
   pill: { paddingVertical: 8, paddingHorizontal: 13, borderRadius: 999, borderWidth: 1, maxWidth: '100%' },
   bar: { flexDirection: 'row', gap: 4, paddingTop: 8, paddingBottom: 10 },
-  barBtn: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 10, borderRadius: 14 },
+  barBtn: { flex: 1, alignItems: 'center', gap: 5, paddingVertical: 11, borderRadius: 16, minHeight: 64 },
 });

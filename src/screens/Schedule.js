@@ -51,9 +51,9 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
   const Row = ({ first, children, style }) => (
     <View style={[styles.row, { borderTopColor: theme.line, borderTopWidth: first ? 0 : 1 }, style]}>{children}</View>
   );
-  const T = (p) => <Text {...p} style={[{ fontFamily: FONTS.ui, color: theme.fg, fontSize: 15 }, p.style]} />;
+  const T = (p) => <Text {...p} style={[{ fontFamily: FONTS.ui, color: theme.fg, fontSize: 17 }, p.style]} />;
   const Btn = ({ label, onPress }) => (
-    <Pressable onPress={onPress} style={[styles.btn, { borderColor: theme.line }]}><T style={{ fontSize: 13 }}>{label}</T></Pressable>
+    <Pressable onPress={onPress} style={[styles.btn, { borderColor: theme.line }]}><T style={{ fontSize: 15 }}>{label}</T></Pressable>
   );
 
   return (
@@ -63,8 +63,8 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         <View style={[styles.grid, { backgroundColor: theme.surface, borderColor: theme.line }]}>
           {[['Fajr', 'fajr'], ['Sunrise', 'sunrise'], ['Dhuhr', 'dhuhr'], ['Asr', 'asr'], ['Maghrib', 'maghrib'], ['Isha', 'isha']].map(([n, k]) => (
             <View key={k} style={styles.cell}>
-              <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONTS.ui }}>{n}</Text>
-              <Text style={{ color: theme.fg, fontSize: 14, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>
+              <Text style={{ color: theme.muted, fontSize: 12.5, fontFamily: FONTS.ui }}>{n}</Text>
+              <Text style={{ color: theme.fg, fontSize: 16, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>
                 {times ? fmtTime(times[k]).replace(/ (AM|PM)/, '') : '--'}
               </Text>
             </View>
@@ -76,7 +76,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         <Group theme={theme}>
           <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
             <T style={{ fontFamily: FONTS.uiBold }}>Notifications are off</T>
-            <T style={{ color: theme.muted, fontSize: 13 }}>Turn them on to get a reminder on your phone after each prayer.</T>
+            <T style={{ color: theme.muted, fontSize: 15 }}>Turn them on to get a reminder on your phone after each prayer.</T>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Btn label="Turn on" onPress={onEnableNotifs} />
               <Btn label="Open phone settings" onPress={() => Linking.openSettings()} />
@@ -93,7 +93,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
               <Text style={[styles.tm, { color: past ? theme.muted : theme.fg }]}>{fmtTime(x.at)}</Text>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <T style={{ fontFamily: FONTS.uiBold, color: past ? theme.muted : theme.fg }}>{x.name}</T>
-                <T style={{ color: theme.muted, fontSize: 12.5 }} numberOfLines={2}>{x.sub}</T>
+                <T style={{ color: theme.muted, fontSize: 14 }} numberOfLines={2}>{x.sub}</T>
               </View>
               <Btn label="Start" onPress={() => onStart(x.open)} />
             </Row>
@@ -105,7 +105,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         <Row first>
           <View style={{ flex: 1 }}>
             <T style={{ fontFamily: FONTS.uiBold }}>{settings.location?.name || 'Not set'}</T>
-            <T style={{ color: theme.muted, fontSize: 12.5 }}>{settings.location?.source === 'gps' ? 'From your phone’s location' : 'Chosen manually'}</T>
+            <T style={{ color: theme.muted, fontSize: 14 }}>{settings.location?.source === 'gps' ? 'From your phone’s location' : 'Chosen manually'}</T>
           </View>
           {busy ? <ActivityIndicator color={theme.brass} /> : <Btn label="Use my location" onPress={useGps} />}
         </Row>
@@ -119,12 +119,12 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
             <T>{c.name}</T>
           </Pressable>
         ))}
-        {msg ? <Row><T style={{ color: theme.muted, fontSize: 13 }}>{msg}</T></Row> : null}
+        {msg ? <Row><T style={{ color: theme.muted, fontSize: 15 }}>{msg}</T></Row> : null}
       </Group>
 
       <Group label="Calculation" theme={theme}>
         <Row first>
-          <View style={{ flex: 1 }}><T>Method</T><T style={{ color: theme.muted, fontSize: 12.5 }}>{METHODS[settings.method]}</T></View>
+          <View style={{ flex: 1 }}><T>Method</T><T style={{ color: theme.muted, fontSize: 14 }}>{METHODS[settings.method]}</T></View>
           <Btn label={picker === 'method' ? 'Hide' : 'Change'} onPress={() => setPicker(picker === 'method' ? null : 'method')} />
         </Row>
         {picker === 'method' && Object.entries(METHODS).map(([k, v]) => (
@@ -138,7 +138,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
           <View style={[styles.seg, { borderColor: theme.line }]}>
             {['Shafi', 'Hanafi'].map((m) => (
               <Pressable key={m} onPress={() => update({ madhab: m, methodAuto: false })} style={[styles.segBtn, settings.madhab === m && { backgroundColor: theme.brass }]}>
-                <T style={{ fontSize: 13, color: settings.madhab === m ? theme.bg : theme.fg }}>{m === 'Shafi' ? 'Standard' : 'Hanafi'}</T>
+                <T style={{ fontSize: 15, color: settings.madhab === m ? theme.bg : theme.fg }}>{m === 'Shafi' ? 'Standard' : 'Hanafi'}</T>
               </Pressable>
             ))}
           </View>
@@ -147,7 +147,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
 
       <Group label="Fine-tune times" theme={theme}>
         <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-          <T style={{ color: theme.muted, fontSize: 12.5 }}>If your masjid's timetable differs by a minute or two, adjust each prayer here.</T>
+          <T style={{ color: theme.muted, fontSize: 14 }}>If your masjid's timetable differs by a minute or two, adjust each prayer here.</T>
         </Row>
         {PRAYERS.map((p) => {
           const v = settings.adjust?.[p.key] || 0;
@@ -157,13 +157,13 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
               <T>{p.name}</T>
               <View style={styles.stepper}>
                 <Pressable onPress={() => set(v - 1)} hitSlop={6} accessibilityLabel={`${p.name} one minute earlier`} style={[styles.stepBtn, { borderColor: theme.line }]}>
-                  <T style={{ fontSize: 18 }}>−</T>
+                  <T style={{ fontSize: 20.5 }}>−</T>
                 </Pressable>
                 <T style={{ width: 64, textAlign: 'center', fontVariant: ['tabular-nums'], color: v ? theme.brass : theme.muted }}>
                   {v === 0 ? '0 min' : `${v > 0 ? '+' : ''}${v} min`}
                 </T>
                 <Pressable onPress={() => set(v + 1)} hitSlop={6} accessibilityLabel={`${p.name} one minute later`} style={[styles.stepBtn, { borderColor: theme.line }]}>
-                  <T style={{ fontSize: 18 }}>+</T>
+                  <T style={{ fontSize: 20.5 }}>+</T>
                 </Pressable>
               </View>
             </Row>
@@ -178,7 +178,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
             {OFFSETS.map((o) => (
               <Pressable key={o} onPress={() => update({ offset: o })}
                 style={[styles.chip, { borderColor: settings.offset === o ? theme.brass : theme.line }, settings.offset === o && { backgroundColor: theme.brassSoft }]}>
-                <T style={{ fontSize: 13 }}>{o} min</T>
+                <T style={{ fontSize: 15 }}>{o} min</T>
               </Pressable>
             ))}
           </View>
@@ -191,7 +191,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
           </Row>
         ))}
         <Row>
-          <View style={{ flex: 1 }}><T>Daily tasbeeh</T><T style={{ color: theme.muted, fontSize: 12.5 }}>9:00 AM · 2:30 PM · 10:00 PM</T></View>
+          <View style={{ flex: 1 }}><T>Daily tasbeeh</T><T style={{ color: theme.muted, fontSize: 14 }}>9:00 AM · 2:30 PM · 10:00 PM</T></View>
           <Switch value={settings.daily} onValueChange={(v) => update({ daily: v })} trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
         </Row>
         <Row>
@@ -200,7 +200,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         </Row>
       </Group>
 
-      <Text style={{ color: theme.muted, fontSize: 12.5, lineHeight: 18, fontFamily: FONTS.ui }}>
+      <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20.5, fontFamily: FONTS.ui }}>
         Times are calculated on your phone from your location and the method above. They follow you when you travel, and you can fine-tune each prayer to match your masjid. Reminders are scheduled a week ahead and refresh automatically.
       </Text>
     </Sheet>
@@ -208,12 +208,12 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
 }
 
 const styles = StyleSheet.create({
-  lbl: { fontFamily: FONTS.uiBold, fontSize: 11.5, letterSpacing: 1.2 },
+  lbl: { fontFamily: FONTS.uiBold, fontSize: 13, letterSpacing: 1.2 },
   grid: { flexDirection: 'row', borderWidth: 1, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 4 },
   cell: { flex: 1, alignItems: 'center', gap: 3 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
   opt: { paddingVertical: 12, paddingHorizontal: 22, borderTopWidth: 1 },
-  tm: { width: 74, fontFamily: FONTS.numMed, fontSize: 15, fontVariant: ['tabular-nums'] },
+  tm: { width: 74, fontFamily: FONTS.numMed, fontSize: 17, fontVariant: ['tabular-nums'] },
   btn: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
   chip: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
   seg: { flexDirection: 'row', borderWidth: 1, borderRadius: 999, padding: 3 },
