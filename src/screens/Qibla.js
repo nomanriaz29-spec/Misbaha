@@ -124,15 +124,15 @@ export default function Qibla({ visible, onClose, settings, theme }) {
 function Fact({ theme, k, v }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: 3, minWidth: 0 }}>
-      <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONTS.ui }}>{k}</Text>
-      <Text numberOfLines={1} style={{ color: theme.fg, fontSize: 15, fontFamily: FONTS.numMed }}>{v}</Text>
+      <Text style={{ color: theme.muted, fontSize: 12.5, fontFamily: FONTS.ui }}>{k}</Text>
+      <Text numberOfLines={1} style={{ color: theme.fg, fontSize: 17, fontFamily: FONTS.numMed }}>{v}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  status: { fontFamily: FONTS.uiBold, fontSize: 18, textAlign: 'center' },
-  note: { fontFamily: FONTS.ui, fontSize: 12.5, lineHeight: 18, textAlign: 'center', maxWidth: 320 },
+  status: { fontFamily: FONTS.uiBold, fontSize: 20.5, textAlign: 'center' },
+  note: { fontFamily: FONTS.ui, fontSize: 14, lineHeight: 20.5, textAlign: 'center', maxWidth: 320 },
   facts: { flexDirection: 'row', alignSelf: 'stretch', borderWidth: 1, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 6 },
   btn: { paddingVertical: 9, paddingHorizontal: 16, borderRadius: 999, borderWidth: 1 },
 });

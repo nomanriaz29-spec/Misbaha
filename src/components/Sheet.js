@@ -36,9 +36,9 @@ const styles = StyleSheet.create({
   wrap: { flex: 1 },
   sheet: { maxHeight: '88%', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderTopWidth: 1 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 16, paddingBottom: 8 },
-  title: { fontFamily: FONTS.numMed, fontSize: 22 },
+  title: { fontFamily: FONTS.numMed, fontSize: 25 },
   done: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1 },
   body: { paddingHorizontal: 18, paddingBottom: 28, paddingTop: 4, gap: 20 },
-  lbl: { fontFamily: FONTS.uiBold, fontSize: 11.5, letterSpacing: 1.2 },
+  lbl: { fontFamily: FONTS.uiBold, fontSize: 13, letterSpacing: 1.2 },
   list: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
 });

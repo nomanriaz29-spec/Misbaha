@@ -59,8 +59,8 @@ export default function Library({ visible, onClose, onChoose, progress, theme })
 const styles = StyleSheet.create({
   row: { paddingVertical: 13, paddingHorizontal: 14, gap: 4 },
   line: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  t: { fontFamily: FONTS.uiBold, fontSize: 15 },
-  c: { fontFamily: FONTS.ui, fontSize: 12.5, fontVariant: ['tabular-nums'] },
-  s: { fontFamily: FONTS.ui, fontSize: 12.5, lineHeight: 18 },
-  ar: { fontFamily: FONTS.ar, fontSize: 21, lineHeight: 34, textAlign: 'right', writingDirection: 'rtl' },
+  t: { fontFamily: FONTS.uiBold, fontSize: 17 },
+  c: { fontFamily: FONTS.ui, fontSize: 14, fontVariant: ['tabular-nums'] },
+  s: { fontFamily: FONTS.ui, fontSize: 14, lineHeight: 20.5 },
+  ar: { fontFamily: FONTS.ar, fontSize: 24, lineHeight: 34, textAlign: 'right', writingDirection: 'rtl' },
 });
