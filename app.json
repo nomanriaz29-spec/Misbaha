@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "scheme": "misbaha",
     "ios": {
-      "bundleIdentifier": "com.yourname.misbaha",
+      "bundleIdentifier": "com.nomanriaz.misbaha",
       "buildNumber": "1",
       "supportsTablet": false,
       "infoPlist": {
@@ -16,7 +16,7 @@
       }
     },
     "android": {
-      "package": "com.yourname.misbaha",
+      "package": "com.nomanriaz.misbaha",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

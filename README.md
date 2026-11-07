@@ -62,7 +62,7 @@ Install **Expo Go** from the App Store or Play Store and scan the QR code.
 
 In `app.json`:
 
-- `ios.bundleIdentifier` and `android.package`: replace `com.yourname.misbaha` with your own reverse domain, for example `com.nomanriaz.misbaha`. **You cannot change these after the first store release.**
+- `ios.bundleIdentifier` and `android.package`: this is set to `com.nomanriaz.misbaha`. **You cannot change these after the first store release.**
 - `name` if you want a different store name. "Misbaha" may already be taken on the stores.
 
 ## 3. Build with EAS (Expo's cloud build service)
