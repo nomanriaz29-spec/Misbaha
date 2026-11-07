@@ -41,7 +41,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
       if (loc.denied) {
         setMsg('Location is off for Misbaha. Turn it on in Settings, or choose a city.');
       } else {
-        update({ location: loc, ...defaultsForCountry(loc.country) });
+        update({ location: loc, ...defaultsForCountry(loc.country), methodAuto: true });
         setMsg('Updated to ' + loc.name);
       }
     } catch (e) { setMsg(e.message); }
@@ -114,7 +114,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
           <Btn label={picker === 'city' ? 'Hide' : 'Choose'} onPress={() => setPicker(picker === 'city' ? null : 'city')} />
         </Row>
         {picker === 'city' && CITIES.map((c) => (
-          <Pressable key={c.name} onPress={() => { update({ location: c, ...defaultsForCountry(c.country) }); setPicker(null); setMsg('Updated to ' + c.name); }}
+          <Pressable key={c.name} onPress={() => { update({ location: c, ...defaultsForCountry(c.country), methodAuto: true }); setPicker(null); setMsg('Updated to ' + c.name); }}
             style={[styles.opt, { borderTopColor: theme.line }]}>
             <T>{c.name}</T>
           </Pressable>
@@ -128,7 +128,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
           <Btn label={picker === 'method' ? 'Hide' : 'Change'} onPress={() => setPicker(picker === 'method' ? null : 'method')} />
         </Row>
         {picker === 'method' && Object.entries(METHODS).map(([k, v]) => (
-          <Pressable key={k} onPress={() => { update({ method: k }); setPicker(null); }}
+          <Pressable key={k} onPress={() => { update({ method: k, methodAuto: false }); setPicker(null); }}
             style={[styles.opt, { borderTopColor: theme.line }, settings.method === k && { backgroundColor: theme.brassSoft }]}>
             <T>{v}</T>
           </Pressable>
@@ -137,12 +137,38 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
           <T>Asr</T>
           <View style={[styles.seg, { borderColor: theme.line }]}>
             {['Shafi', 'Hanafi'].map((m) => (
-              <Pressable key={m} onPress={() => update({ madhab: m })} style={[styles.segBtn, settings.madhab === m && { backgroundColor: theme.brass }]}>
+              <Pressable key={m} onPress={() => update({ madhab: m, methodAuto: false })} style={[styles.segBtn, settings.madhab === m && { backgroundColor: theme.brass }]}>
                 <T style={{ fontSize: 13, color: settings.madhab === m ? theme.bg : theme.fg }}>{m === 'Shafi' ? 'Standard' : 'Hanafi'}</T>
               </Pressable>
             ))}
           </View>
         </Row>
+      </Group>
+
+      <Group label="Fine-tune times" theme={theme}>
+        <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+          <T style={{ color: theme.muted, fontSize: 12.5 }}>If your masjid's timetable differs by a minute or two, adjust each prayer here.</T>
+        </Row>
+        {PRAYERS.map((p) => {
+          const v = settings.adjust?.[p.key] || 0;
+          const set = (n) => update({ adjust: { ...settings.adjust, [p.key]: Math.max(-30, Math.min(30, n)) } });
+          return (
+            <Row key={p.key}>
+              <T>{p.name}</T>
+              <View style={styles.stepper}>
+                <Pressable onPress={() => set(v - 1)} hitSlop={6} accessibilityLabel={`${p.name} one minute earlier`} style={[styles.stepBtn, { borderColor: theme.line }]}>
+                  <T style={{ fontSize: 18 }}>−</T>
+                </Pressable>
+                <T style={{ width: 64, textAlign: 'center', fontVariant: ['tabular-nums'], color: v ? theme.brass : theme.muted }}>
+                  {v === 0 ? '0 min' : `${v > 0 ? '+' : ''}${v} min`}
+                </T>
+                <Pressable onPress={() => set(v + 1)} hitSlop={6} accessibilityLabel={`${p.name} one minute later`} style={[styles.stepBtn, { borderColor: theme.line }]}>
+                  <T style={{ fontSize: 18 }}>+</T>
+                </Pressable>
+              </View>
+            </Row>
+          );
+        })}
       </Group>
 
       <Group label="Reminders" theme={theme}>
@@ -175,7 +201,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
       </Group>
 
       <Text style={{ color: theme.muted, fontSize: 12.5, lineHeight: 18, fontFamily: FONTS.ui }}>
-        Times are calculated from your location and may differ by a few minutes from your local mosque. Reminders are scheduled a week ahead and refresh automatically.
+        Times are calculated on your phone from your location and the method above. They follow you when you travel, and you can fine-tune each prayer to match your masjid. Reminders are scheduled a week ahead and refresh automatically.
       </Text>
     </Sheet>
   );
@@ -192,4 +218,6 @@ const styles = StyleSheet.create({
   chip: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
   seg: { flexDirection: 'row', borderWidth: 1, borderRadius: 999, padding: 3 },
   segBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999 },
+  stepper: { flexDirection: 'row', alignItems: 'center' },
+  stepBtn: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

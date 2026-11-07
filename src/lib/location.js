@@ -1,21 +1,15 @@
 import * as Location from 'expo-location';
+import { distanceKm, defaultsForCountry } from './prayer';
 
 // Asks for "while using the app" location and returns { lat, lng, name, country }.
 // Returns { denied: true } when the user says no.
 export async function detectLocation() {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') return { denied: true };
+  return readPosition();
+}
 
-  let pos = null;
-  try {
-    pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  } catch (e) {
-    pos = await Location.getLastKnownPositionAsync();
-  }
-  if (!pos) throw new Error('Could not read your location. Check that location services are on.');
-
-  const lat = pos.coords.latitude;
-  const lng = pos.coords.longitude;
+async function placeFor(lat, lng) {
   let name = `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
   let country = '';
   try {
@@ -25,8 +19,48 @@ export async function detectLocation() {
       country = place.isoCountryCode || '';
     }
   } catch (e) {}
+  return { name, country };
+}
+
+const MOVED_KM = 15;      // prayer times shift about 1 minute per ~25 km east-west
+const CHECK_EVERY = 3 * 3600e3;
+
+// Called when the app comes to the foreground. If location is on (no prompt is ever shown here)
+// and the phone has moved more than 15 km, returns a settings patch with the new place.
+export async function refreshLocationIfMoved(settings) {
+  const cur = settings?.location;
+  if (!cur || cur.source !== 'gps' || Date.now() - (cur.at || 0) < CHECK_EVERY) return null;
+  try {
+    const perm = await Location.getForegroundPermissionsAsync();
+    if (perm.status !== 'granted') return null;
+    let pos = await Location.getLastKnownPositionAsync({ maxAge: CHECK_EVERY, requiredAccuracy: 5000 });
+    if (!pos) pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+    if (!pos) return null;
+    const next = { lat: Math.round(pos.coords.latitude * 100) / 100, lng: Math.round(pos.coords.longitude * 100) / 100 };
+    if (distanceKm(cur, next) < MOVED_KM) return { location: { ...cur, at: Date.now() } };
+    const place = await placeFor(next.lat, next.lng);
+    const patch = { location: { ...next, ...place, source: 'gps', at: Date.now() }, moved: true };
+    if (settings.methodAuto && place.country && place.country !== cur.country) Object.assign(patch, defaultsForCountry(place.country));
+    return patch;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function readPosition() {
+  let pos = null;
+  try {
+    pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  } catch (e) {
+    pos = await Location.getLastKnownPositionAsync();
+  }
+  if (!pos) throw new Error('Could not read your location. Check that location services are on.');
+
   // Rounded to about 1 km before it is used or saved.
-  return { lat: Math.round(lat * 100) / 100, lng: Math.round(lng * 100) / 100, name, country, source: 'gps' };
+  const lat = Math.round(pos.coords.latitude * 100) / 100;
+  const lng = Math.round(pos.coords.longitude * 100) / 100;
+  const { name, country } = await placeFor(lat, lng);
+  return { lat, lng, name, country, source: 'gps', at: Date.now() };
 }
 
 // Fallback list when location permission is denied.

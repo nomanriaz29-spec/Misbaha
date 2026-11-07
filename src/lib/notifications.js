@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { getTimes, PRAYERS } from './prayer';
 import { DAILY } from '../data/adhkar';
+import { updateWidget } from './widget';
 
 const CHANNEL = 'reminders';
 const DAYS_AHEAD = 7; // 5 prayers × 7 days + 3 daily + 1 nudge = 39, under iOS's 64 pending limit
@@ -46,6 +47,7 @@ export async function hasNotificationPermission() {
 // plus the three daily tasbeeh. Safe to call often (app open, settings change, background task).
 export async function rescheduleAll(settings) {
   if (!settings || !settings.location) return 0;
+  updateWidget(settings); // the iOS widget works even when notifications are off
   if (!(await hasNotificationPermission())) return 0;
   await setupChannel();
   await Notifications.cancelAllScheduledNotificationsAsync();

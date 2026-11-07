@@ -17,6 +17,8 @@ One codebase for **Android and iOS**, built with Expo (SDK 56, React Native).
   - Reminders are scheduled 7 days ahead and refreshed every time the app opens and by a background task. iOS allows at most 64 pending notifications, and the app uses about 39.
 - **Qibla finder** (compass button in the top bar). The live compass turns with the phone using its heading sensor. It shows the bearing and distance to the Kaaba, turns green and vibrates when you face the Qibla, and prompts you to calibrate when the reading is unreliable.
 - **Daily history** (tap "Today · History" in the top left). It shows your current and best streak, the last 7 days and all-time totals, plus a month calendar shaded by how much you did each day. Tap any day to see which routines you completed (After Salah 0–5, morning, evening, before sleep) and a count for every dhikr and dua. Two years of history are kept on the phone.
+- **Accurate prayer times that follow you.** Times are calculated on the phone with the [adhan](https://github.com/batoulapps/adhan-js) library. When the app opens, it checks (without asking again) whether you've moved more than 15 km and updates the place and the country's method. **Fine-tune times** in Prayers lets you shift any prayer by ±30 minutes to match your masjid exactly.
+- **iOS widget** ([preview](docs/widget-preview.png)) for the home screen (small and medium) and the lock screen (inline, rectangular and circular). It shows the next prayer, a live countdown and today's five times. The app saves 30 days of times for it, so it keeps working even if the app isn't opened for weeks.
 - Light and dark mode follow the phone.
 
 ## Project layout
@@ -36,6 +38,8 @@ src/lib/history.js         daily history, streaks
 src/lib/recommend.js       key validation, recommendations
 src/lib/storage.js         settings/progress storage with validation
 src/lib/qibla.js           Qibla bearing and distance
+src/lib/widget.js          writes prayer times for the iOS widget
+targets/prayer-widget/     the iOS widget (SwiftUI / WidgetKit)
 src/screens/               Onboarding, Counter, Library, Duas, History, Schedule, Qibla
 assets/                    icon, adaptive icon, splash, notification icon
 ```
@@ -106,6 +110,20 @@ You don't need a Mac. EAS builds iOS in the cloud.
 3. Add screenshots for 6.9" and 6.5" iPhones, a description, keywords and a privacy policy URL.
 4. **App Privacy:** choose *Data Not Collected*. Location is used only on the phone and never sent to you. **Age rating:** 4+.
 5. Run `npm run submit:ios`, then submit for review in App Store Connect. Test with TestFlight first.
+
+## Test on an iPhone
+
+**Quick look, free, no Apple account (about 5 minutes).** Install **Expo Go** from the App Store. On your computer, in the project folder, run `npx expo start --tunnel` and scan the QR code with the iPhone camera. Everything works except the widget and the background refresh, which need a real build.
+
+**Full test including the widget (needs the Apple Developer Program, US$99/year):**
+1. Join at [developer.apple.com/programs](https://developer.apple.com/programs/) and wait for approval (often 1–2 days).
+2. Register your iPhone: `npm run register-iphone`. Open the link it prints on the iPhone and install the profile it offers.
+3. On the iPhone: Settings → Privacy & Security → **Developer Mode** → on, then restart.
+4. Build: `npm run build:ios:test`. Sign in with your Apple ID when asked, and let EAS create the certificates and profiles. It also sets up the widget's App Group.
+5. When the build finishes, open its link on the iPhone and tap **Install**.
+6. Open Misbaha once so it saves the prayer times. Then long-press the home screen → **+** → search **Misbaha** → add the widget. For the lock screen: long-press the lock screen → Customize → Lock Screen → add widget.
+
+To test with friends instead, build with `npm run build:ios` and send it to **TestFlight** with `npm run submit:ios`.
 
 ## Security
 

@@ -14,6 +14,8 @@ export const DEFAULT_SETTINGS = {
   daily: true,
   haptics: true,
   onboarded: false,
+  methodAuto: true, // follow the country's method until the user picks one
+  adjust: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 }, // minutes
 };
 const OFFSETS = [5, 10, 15, 20, 30];
 
@@ -35,13 +37,14 @@ export function cleanLocation(l) {
     name: String(l.name || '').slice(0, 80),
     country: /^[A-Za-z]{2}$/.test(l.country || '') ? l.country.toUpperCase() : '',
     source: l.source === 'gps' ? 'gps' : 'manual',
+    at: Number.isFinite(l.at) ? l.at : 0, // when it was last read from the phone
   };
 }
 
 // Never trust stored JSON: keep only known fields with valid values.
 function cleanSettings(s) {
   const d = DEFAULT_SETTINGS;
-  if (!s || typeof s !== 'object') return { ...d, prayers: { ...d.prayers } };
+  if (!s || typeof s !== 'object') return { ...d, prayers: { ...d.prayers }, adjust: { ...d.adjust } };
   const prayers = {};
   for (const k of Object.keys(d.prayers)) prayers[k] = typeof s.prayers?.[k] === 'boolean' ? s.prayers[k] : d.prayers[k];
   const location = cleanLocation(s.location);
@@ -54,6 +57,11 @@ function cleanSettings(s) {
     daily: typeof s.daily === 'boolean' ? s.daily : d.daily,
     haptics: typeof s.haptics === 'boolean' ? s.haptics : d.haptics,
     onboarded: s.onboarded === true && !!location,
+    methodAuto: s.methodAuto !== false,
+    adjust: Object.fromEntries(Object.keys(d.adjust).map((k) => {
+      const v = s.adjust?.[k];
+      return [k, Number.isInteger(v) ? Math.max(-30, Math.min(30, v)) : 0];
+    })),
   };
 }
 

@@ -12,6 +12,7 @@ import { useTheme } from './src/theme';
 import { loadSettings, saveSettings, loadProgress, saveProgress, todayKey } from './src/lib/storage';
 import { rescheduleAll, hasNotificationPermission, requestNotificationPermission, setupChannel } from './src/lib/notifications';
 import { registerBackgroundRefresh } from './src/lib/background';
+import { refreshLocationIfMoved } from './src/lib/location';
 import Counter from './src/screens/Counter';
 import Library from './src/screens/Library';
 import Schedule, { buildPlan } from './src/screens/Schedule';
@@ -45,7 +46,7 @@ export default function App() {
       setSettings(s); setProgressState(p); setHistory(seeded);
       await setupChannel();
       setNotifOn(await hasNotificationPermission());
-      if (s.onboarded) { rescheduleAll(s).catch(() => {}); registerBackgroundRefresh(); }
+      if (s.onboarded) { rescheduleAll(s).catch(() => {}); registerBackgroundRefresh(); checkTravel(s); }
     })();
   }, []);
 
@@ -83,13 +84,21 @@ export default function App() {
     });
   }, []);
 
+  // Travelled more than 15 km since the last check? Move prayer times to the new place.
+  const checkTravel = useCallback(async (s) => {
+    const patch = await refreshLocationIfMoved(s);
+    if (!patch) return;
+    const { moved, ...rest } = patch;
+    update(rest);
+  }, [update]);
+
   // When the app comes back to the foreground: new day? refresh reminders and the "next" chip.
   useEffect(() => {
     const sub = AppState.addEventListener('change', async (st) => {
       if (st !== 'active') { flushHistory(); return; }
       setProgressState((cur) => (cur && cur.day !== todayKey() ? { day: todayKey(), total: 0, cur: cur.cur, prog: {} } : cur));
       setNotifOn(await hasNotificationPermission());
-      if (settingsRef.current?.onboarded) rescheduleAll(settingsRef.current).catch(() => {});
+      if (settingsRef.current?.onboarded) { rescheduleAll(settingsRef.current).catch(() => {}); checkTravel(settingsRef.current); }
       setTick((t) => t + 1);
     });
     const timer = setInterval(() => setTick((t) => t + 1), 60000);

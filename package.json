@@ -11,17 +11,20 @@
     "build:android": "eas build --platform android --profile production",
     "build:ios": "eas build --platform ios --profile production",
     "submit:android": "eas submit --platform android --latest",
-    "submit:ios": "eas submit --platform ios --latest"
+    "submit:ios": "eas submit --platform ios --latest",
+    "build:ios:test": "eas build --platform ios --profile preview",
+    "register-iphone": "eas device:create"
   },
   "dependencies": {
     "expo": "~56.0.0",
     "react": "*",
     "react-native": "*",
-    "adhan": "^4.4.3",
-    "@react-native-async-storage/async-storage": "*",
+    "@bacons/apple-targets": "latest",
     "@expo-google-fonts/amiri": "*",
     "@expo-google-fonts/figtree": "*",
     "@expo-google-fonts/fraunces": "*",
+    "@react-native-async-storage/async-storage": "*",
+    "adhan": "^4.4.3",
     "expo-background-task": "*",
     "expo-font": "*",
     "expo-haptics": "*",

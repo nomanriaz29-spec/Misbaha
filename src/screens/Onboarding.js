@@ -26,7 +26,7 @@ export default function Onboarding({ theme, onDone }) {
   const finish = async (askNotif) => {
     let granted = false;
     if (askNotif) { setBusy(true); granted = await requestNotificationPermission(); setBusy(false); }
-    onDone({ location: loc, ...defaultsForCountry(loc.country), onboarded: true }, granted);
+    onDone({ location: { ...loc, at: Date.now() }, ...defaultsForCountry(loc.country), methodAuto: true, onboarded: true }, granted);
   };
 
   const Primary = ({ label, onPress }) => (

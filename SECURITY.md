@@ -21,6 +21,8 @@ Misbaha has a small attack surface. It has no server, no accounts, no network re
 - **Notifications** are local only, with no push tokens and no server. Their text contains no personal data.
 - **Location** is requested only while the app is in use (iOS "When In Use"). It is never used in the background, and the background task only reschedules notifications.
 - **Storage** contains no sensitive data (counts, settings, a city-level location), so AsyncStorage is appropriate. Encrypted storage isn't needed.
+- **iOS widget.** It shares only the next 30 days of prayer times and the city name through a private App Group (`group.com.nomanriaz.misbaha`) that only Misbaha and its widget can read.
+- **Travel check.** When the app opens, it reads location only if permission was already given. It never prompts, never runs in the background, and rounds the position to about 1 km.
 - **Deep links.** The `misbaha://` scheme has no handler that acts on link content, so a malicious link can only open the app.
 - **Web preview.** All text placed into the page is escaped or set with `textContent`, and saved state is validated on load.
 - **Repository** is private.
