@@ -34,4 +34,4 @@ Misbaha has a small attack surface. It has no server, no accounts, no network re
 
 ## Reporting a problem
 
-Email [your email address] with details. Please don't open a public issue for a security problem.
+Email noman.riaz29@gmail.com with details. Please don't open a public issue for a security problem.
