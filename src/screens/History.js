@@ -1,0 +1,168 @@
+import React, { useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import Sheet, { Group } from '../components/Sheet';
+import { dateKey, stats } from '../lib/history';
+import { labelFor } from '../lib/recommend';
+import { SETS } from '../data/adhkar';
+import { FONTS } from '../theme';
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Shade a day by how much tasbeeh was done.
+const level = (n) => (n <= 0 ? 0 : n < 100 ? 1 : n < 300 ? 2 : 3);
+const LEVEL_OPACITY = [0, 0.28, 0.55, 0.9];
+
+export default function History({ visible, onClose, history, theme }) {
+  const today = new Date();
+  const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [sel, setSel] = useState(dateKey(today));
+  const s = useMemo(() => stats(history), [history, visible]);
+
+  const cells = useMemo(() => {
+    const first = new Date(month);
+    const lead = (first.getDay() + 6) % 7; // Monday first
+    const daysIn = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const out = Array.from({ length: lead }, () => null);
+    for (let d = 1; d <= daysIn; d++) out.push(new Date(month.getFullYear(), month.getMonth(), d));
+    while (out.length % 7) out.push(null);
+    return out;
+  }, [month]);
+
+  const isFuture = (d) => d > today;
+  const canNext = new Date(month.getFullYear(), month.getMonth() + 1, 1) <= today;
+  const shift = (n) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
+
+  const day = history[sel];
+  const selDate = (() => { const [y, m, d] = sel.split('-').map(Number); return new Date(y, m - 1, d); })();
+  const isToday = sel === dateKey(today);
+  const items = day ? Object.entries(day.items).sort((a, b) => b[1] - a[1]) : [];
+  const done = day?.done || {};
+
+  return (
+    <Sheet visible={visible} title="Your history" onClose={onClose} theme={theme}>
+      <View style={styles.statsRow}>
+        <Stat theme={theme} k="Streak" v={s.current} unit={s.current === 1 ? 'day' : 'days'} accent />
+        <Stat theme={theme} k="Best" v={s.best} unit={s.best === 1 ? 'day' : 'days'} />
+        <Stat theme={theme} k="7 days" v={s.week.toLocaleString()} />
+        <Stat theme={theme} k="All time" v={s.all.toLocaleString()} />
+      </View>
+
+      <View style={[styles.cal, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+        <View style={styles.calHead}>
+          <Pressable onPress={() => shift(-1)} hitSlop={10} accessibilityLabel="Previous month" style={styles.nav}>
+            <Text style={{ color: theme.fg, fontSize: 20 }}>‹</Text>
+          </Pressable>
+          <Text style={[styles.month, { color: theme.fg }]}>{MONTHS[month.getMonth()]} {month.getFullYear()}</Text>
+          <Pressable onPress={() => canNext && shift(1)} hitSlop={10} accessibilityLabel="Next month" style={[styles.nav, !canNext && { opacity: 0.25 }]}>
+            <Text style={{ color: theme.fg, fontSize: 20 }}>›</Text>
+          </Pressable>
+        </View>
+        <View style={styles.grid}>
+          {WEEKDAYS.map((w) => <Text key={w} style={[styles.wd, { color: theme.muted }]}>{w.slice(0, 1)}</Text>)}
+          {cells.map((d, i) => {
+            if (!d) return <View key={i} style={styles.cell} />;
+            const k = dateKey(d), n = history[k]?.total || 0, lv = level(n), future = isFuture(d);
+            const selected = k === sel, todayCell = k === dateKey(today);
+            return (
+              <Pressable key={i} disabled={future} onPress={() => setSel(k)} style={styles.cell}
+                accessibilityLabel={`${d.getDate()} ${MONTHS[d.getMonth()]}, ${n} counts`}>
+                <View style={[styles.dayBox, { borderColor: selected ? theme.fg : todayCell ? theme.brass : 'transparent' }]}>
+                  {lv > 0 && <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 9 }]} />}
+                  <Text style={{ fontFamily: FONTS.ui, fontSize: 13, color: future ? theme.line : lv >= 2 ? theme.bg : theme.fg, fontVariant: ['tabular-nums'] }}>{d.getDate()}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={styles.legend}>
+          <Text style={[styles.lg, { color: theme.muted }]}>Less</Text>
+          {[0, 1, 2, 3].map((lv) => (
+            <View key={lv} style={[styles.sw, { borderColor: theme.line }]}>
+              {lv > 0 && <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 3 }]} />}
+            </View>
+          ))}
+          <Text style={[styles.lg, { color: theme.muted }]}>More</Text>
+        </View>
+      </View>
+
+      <View style={{ gap: 8 }}>
+        <View style={styles.dayHead}>
+          <Text style={[styles.dayTitle, { color: theme.fg }]}>
+            {isToday ? 'Today' : `${DAYS[selDate.getDay()]} ${selDate.getDate()} ${MONTHS[selDate.getMonth()]}`}
+          </Text>
+          <Text style={[styles.dayTotal, { color: theme.brass }]}>{(day?.total || 0).toLocaleString()}</Text>
+        </View>
+
+        <Group label="Routines" theme={theme}>
+          {Object.entries(SETS).map(([id, set], i) => {
+            const n = done['set:' + id] || 0;
+            const goal = id === 'salah' ? 5 : 1;
+            const full = n >= goal;
+            return (
+              <View key={id} style={[styles.row, { borderTopColor: theme.line, borderTopWidth: i ? 1 : 0 }]}>
+                <Text style={[styles.rowT, { color: theme.fg }]}>{set.name}</Text>
+                <Text style={[styles.rowV, { color: full ? theme.ok : n ? theme.brass : theme.muted }]}>
+                  {id === 'salah' ? `${full ? '✓ ' : ''}${Math.min(n, 99)} of 5` : full ? '✓ Done' : '—'}
+                </Text>
+              </View>
+            );
+          })}
+        </Group>
+
+        {items.length ? (
+          <Group label="Counts" theme={theme}>
+            {items.map(([k, n], i) => (
+              <View key={k} style={[styles.row, { borderTopColor: theme.line, borderTopWidth: i ? 1 : 0 }]}>
+                <Text style={[styles.rowT, { color: theme.fg, flex: 1 }]} numberOfLines={1}>
+                  {done[k] && !k.startsWith('set:') ? '✓ ' : ''}{labelFor(k).replace(/ ×\d+$/, '')}
+                </Text>
+                <Text style={[styles.rowV, { color: theme.fg }]}>{n.toLocaleString()}</Text>
+              </View>
+            ))}
+          </Group>
+        ) : (
+          <Text style={[styles.empty, { color: theme.muted }]}>
+            {isToday ? 'Nothing counted yet today. Tap the counter to begin.' : 'No tasbeeh recorded on this day.'}
+          </Text>
+        )}
+      </View>
+
+      <Text style={[styles.empty, { color: theme.muted, textAlign: 'left' }]}>Your history stays on this phone.</Text>
+    </Sheet>
+  );
+}
+
+function Stat({ theme, k, v, unit, accent }) {
+  return (
+    <View style={[styles.stat, { backgroundColor: theme.surface, borderColor: accent ? theme.brass : theme.line }]}>
+      <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONTS.ui }}>{k}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit style={{ color: theme.fg, fontSize: 20, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>{v}</Text>
+      {unit ? <Text style={{ color: theme.muted, fontSize: 11, fontFamily: FONTS.ui }}>{unit}</Text> : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  statsRow: { flexDirection: 'row', gap: 8 },
+  stat: { flex: 1, borderWidth: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', gap: 2, minWidth: 0 },
+  cal: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 8 },
+  calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  nav: { width: 36, height: 32, alignItems: 'center', justifyContent: 'center' },
+  month: { fontFamily: FONTS.numMed, fontSize: 17 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  wd: { width: `${100 / 7}%`, textAlign: 'center', fontFamily: FONTS.ui, fontSize: 11, paddingBottom: 4 },
+  cell: { width: `${100 / 7}%`, aspectRatio: 1, padding: 2 },
+  dayBox: { flex: 1, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  legend: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
+  lg: { fontFamily: FONTS.ui, fontSize: 11 },
+  sw: { width: 12, height: 12, borderRadius: 3, borderWidth: 1, overflow: 'hidden' },
+  dayHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  dayTitle: { fontFamily: FONTS.numMed, fontSize: 19 },
+  dayTotal: { fontFamily: FONTS.numMed, fontSize: 19, fontVariant: ['tabular-nums'] },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
+  rowT: { fontFamily: FONTS.ui, fontSize: 15 },
+  rowV: { fontFamily: FONTS.uiBold, fontSize: 14, fontVariant: ['tabular-nums'] },
+  empty: { fontFamily: FONTS.ui, fontSize: 13, lineHeight: 19, textAlign: 'center' },
+});

@@ -25,7 +25,8 @@ export async function detectLocation() {
       country = place.isoCountryCode || '';
     }
   } catch (e) {}
-  return { lat, lng, name, country, source: 'gps' };
+  // Rounded to about 1 km before it is used or saved.
+  return { lat: Math.round(lat * 100) / 100, lng: Math.round(lng * 100) / 100, name, country, source: 'gps' };
 }
 
 // Fallback list when location permission is denied.

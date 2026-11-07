@@ -20,7 +20,7 @@ export function currentOf(progress) {
   return { ...k, c: p.c, extra: !!p.extra, done };
 }
 
-export default function Counter({ theme, progress, setProgress, settings, next, onChoose, onOpenLibrary, onOpenDuas, onOpenSchedule, onOpenQibla }) {
+export default function Counter({ theme, progress, setProgress, settings, next, onChoose, onOpenLibrary, onOpenDuas, onOpenSchedule, onOpenQibla, onOpenHistory }) {
   useKeepAwake();
   const { width, height } = useWindowDimensions();
   const ringSize = Math.min(width * 0.74, 290, height * 0.34);
@@ -84,10 +84,10 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
   return (
     <SafeAreaView style={[styles.wrap, { backgroundColor: theme.bg }]}>
       <View style={styles.top}>
-        <View>
+        <Pressable onPress={onOpenHistory} accessibilityRole="button" accessibilityLabel="Your history" hitSlop={8}>
           <Text style={[styles.brand, { color: theme.fg }]}>Misbaha</Text>
-          <Text style={[styles.small, { color: theme.muted }]}>Today {progress.total.toLocaleString()}</Text>
-        </View>
+          <Text style={[styles.small, { color: theme.muted }]}>Today {progress.total.toLocaleString()} <Text style={{ color: theme.brass }}>· History ›</Text></Text>
+        </Pressable>
         <View style={styles.topRight}>
           <Pressable onPress={onOpenSchedule} style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.line }]}>
             <View style={[styles.dot, { backgroundColor: theme.brass }]} />

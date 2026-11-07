@@ -2,6 +2,29 @@ import { DHIKR, SETS } from '../data/adhkar';
 import { DUAS } from '../data/duas';
 import { getTimes } from './prayer';
 
+const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
+// True only for keys that name a real routine, dhikr or dua. Everything read back from
+// storage or a notification goes through this, so a stale or tampered key can't crash the app.
+export function isValidKey(key) {
+  if (typeof key !== 'string' || key.length > 64) return false;
+  const parts = key.split(':');
+  if (parts.length !== 2) return false;
+  const [type, id] = parts;
+  if (type === 'set') return hasOwn(SETS, id);
+  if (type === 'dua') return hasOwn(DUAS, id);
+  if (type === 'one') return hasOwn(DHIKR, id);
+  return false;
+}
+
+// Whether a counter entry has reached its final target (and isn't in "keep counting" mode).
+export function isDone(key, p) {
+  if (!p || !isValidKey(key)) return false;
+  const k = itemFor(key, p.step);
+  const last = k.type !== 'set' || k.step === k.set.steps.length - 1;
+  return k.target > 0 && p.c >= k.target && last && !p.extra;
+}
+
 // Resolves any counter key ("set:salah", "one:subhan", "dua:sleep") to what the counter shows.
 export function itemFor(key, step = 0) {
   const [type, id] = key.split(':');

@@ -18,6 +18,9 @@ import Schedule, { buildPlan } from './src/screens/Schedule';
 import Onboarding from './src/screens/Onboarding';
 import Qibla from './src/screens/Qibla';
 import Duas from './src/screens/Duas';
+import History from './src/screens/History';
+import { loadHistory, saveHistory, flushHistory, record, seedToday } from './src/lib/history';
+import { isValidKey, isDone } from './src/lib/recommend';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -26,6 +29,7 @@ export default function App() {
   const [fontsLoaded] = useFonts({ Amiri_400Regular, Fraunces_300Light, Fraunces_500Medium, Figtree_400Regular, Figtree_600SemiBold });
   const [settings, setSettings] = useState(null);
   const [progress, setProgressState] = useState(null);
+  const [history, setHistory] = useState(null);
   const [notifOn, setNotifOn] = useState(false);
   const [sheet, setSheet] = useState(null); // 'lib' | 'sched' | null
   const [tick, setTick] = useState(0);
@@ -35,15 +39,17 @@ export default function App() {
   // Load saved state.
   useEffect(() => {
     (async () => {
-      const [s, p] = await Promise.all([loadSettings(), loadProgress()]);
-      setSettings(s); setProgressState(p);
+      const [s, p, h] = await Promise.all([loadSettings(), loadProgress(), loadHistory()]);
+      const seeded = seedToday(h, p);
+      if (seeded !== h) saveHistory(seeded);
+      setSettings(s); setProgressState(p); setHistory(seeded);
       await setupChannel();
       setNotifOn(await hasNotificationPermission());
       if (s.onboarded) { rescheduleAll(s).catch(() => {}); registerBackgroundRefresh(); }
     })();
   }, []);
 
-  const ready = fontsLoaded && settings && progress;
+  const ready = fontsLoaded && settings && progress && history;
   useEffect(() => { if (ready) SplashScreen.hideAsync().catch(() => {}); }, [ready]);
 
   const setProgress = useCallback((updater) => {
@@ -53,6 +59,20 @@ export default function App() {
       return next;
     });
   }, []);
+
+  // Record every count and completion into today's history.
+  const prevProg = useRef(null);
+  useEffect(() => {
+    const prev = prevProg.current;
+    prevProg.current = progress;
+    if (!prev || !progress || prev.day !== progress.day || prev.cur !== progress.cur) return;
+    const key = progress.cur;
+    const delta = progress.total - prev.total;
+    const was = isDone(key, prev.prog[key]), now = isDone(key, progress.prog[key]);
+    const doneDelta = now && !was ? 1 : was && !now && delta < 0 ? -1 : 0;
+    if (!delta && !doneDelta) return;
+    setHistory((h) => { const n = record(h, key, delta, doneDelta); saveHistory(n); return n; });
+  }, [progress]);
 
   const update = useCallback((patch) => {
     setSettings((cur) => {
@@ -66,7 +86,7 @@ export default function App() {
   // When the app comes back to the foreground: new day? refresh reminders and the "next" chip.
   useEffect(() => {
     const sub = AppState.addEventListener('change', async (st) => {
-      if (st !== 'active') return;
+      if (st !== 'active') { flushHistory(); return; }
       setProgressState((cur) => (cur && cur.day !== todayKey() ? { day: todayKey(), total: 0, cur: cur.cur, prog: {} } : cur));
       setNotifOn(await hasNotificationPermission());
       if (settingsRef.current?.onboarded) rescheduleAll(settingsRef.current).catch(() => {});
@@ -85,7 +105,7 @@ export default function App() {
     if (handled.current === id) return;
     handled.current = id;
     const open = response.notification.request.content.data?.open;
-    if (open) { setProgress((cur) => ({ ...cur, cur: open })); setSheet(null); }
+    if (isValidKey(open)) { setProgress((cur) => ({ ...cur, cur: open })); setSheet(null); }
   }, [response, progress, setProgress]);
 
   if (!ready) return <View style={{ flex: 1, backgroundColor: theme.bg }} />;
@@ -102,7 +122,7 @@ export default function App() {
   const plan = buildPlan(settings);
   const now = Date.now();
   const next = plan.find((x) => x.at.getTime() > now) || null;
-  const choose = (key) => { setProgress((cur) => ({ ...cur, cur: key })); setSheet(null); };
+  const choose = (key) => { if (!isValidKey(key)) return; setProgress((cur) => ({ ...cur, cur: key })); setSheet(null); };
 
   return (
     <SafeAreaProvider>
@@ -118,7 +138,9 @@ export default function App() {
         onOpenDuas={() => setSheet('duas')}
         onOpenSchedule={() => setSheet('sched')}
         onOpenQibla={() => setSheet('qibla')}
+        onOpenHistory={() => setSheet('history')}
       />
+      <History visible={sheet === 'history'} onClose={() => setSheet(null)} history={history} theme={theme} />
       <Duas visible={sheet === 'duas'} onClose={() => setSheet(null)} onChoose={choose} theme={theme} />
       <Qibla visible={sheet === 'qibla'} onClose={() => setSheet(null)} settings={settings} theme={theme} />
       <Library visible={sheet === 'lib'} onClose={() => setSheet(null)} onChoose={choose} progress={progress} theme={theme} />
