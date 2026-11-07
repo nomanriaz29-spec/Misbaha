@@ -29,4 +29,4 @@ Nothing. Misbaha does not collect, sell or share personal data, and it does not 
 Misbaha is suitable for all ages and collects no data from anyone.
 
 ## Contact
-Questions about this policy: [your email address]
+Questions about this policy: noman.riaz29@gmail.com
