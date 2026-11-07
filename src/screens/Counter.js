@@ -21,7 +21,7 @@ export function currentOf(progress) {
   return { type, id, item: DHIKR[id], target: DHIKR[id].n, c: p.c };
 }
 
-export default function Counter({ theme, progress, setProgress, settings, next, onOpenLibrary, onOpenSchedule }) {
+export default function Counter({ theme, progress, setProgress, settings, next, onOpenLibrary, onOpenSchedule, onOpenQibla }) {
   useKeepAwake();
   const { width, height } = useWindowDimensions();
   const ringSize = Math.min(width * 0.78, 300, height * 0.36);
@@ -98,12 +98,21 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
           <Text style={[styles.brand, { color: theme.fg }]}>Misbaha</Text>
           <Text style={[styles.small, { color: theme.muted }]}>Today {progress.total.toLocaleString()}</Text>
         </View>
-        <Pressable onPress={onOpenSchedule} style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-          <View style={[styles.dot, { backgroundColor: theme.brass }]} />
-          <Text numberOfLines={1} style={[styles.small, { color: theme.fg, flexShrink: 1 }]}>
-            {next ? `Next: ${next.name} · ${fmtTime(next.at)}` : 'Prayer times'}
-          </Text>
-        </Pressable>
+        <View style={styles.topRight}>
+          <Pressable onPress={onOpenSchedule} style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+            <View style={[styles.dot, { backgroundColor: theme.brass }]} />
+            <Text numberOfLines={1} style={[styles.small, { color: theme.fg, flexShrink: 1 }]}>
+              {next ? `Next: ${next.name} · ${fmtTime(next.at)}` : 'Prayer times'}
+            </Text>
+          </Pressable>
+          <Pressable onPress={onOpenQibla} accessibilityRole="button" accessibilityLabel="Qibla finder"
+            style={({ pressed }) => [styles.iconBtn, { backgroundColor: theme.surface, borderColor: theme.line }, pressed && { opacity: 0.6 }]}>
+            <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={theme.fg} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+              <Circle cx={12} cy={12} r={9.5} />
+              <Path d="M15.5 8.5 13.4 13.4 8.5 15.5 10.6 10.6Z" fill={theme.brass} stroke={theme.brass} />
+            </Svg>
+          </Pressable>
+        </View>
       </View>
 
       <Pressable style={styles.stage} onPressIn={inc} accessibilityRole="button" accessibilityLabel={`Count ${k.item.tr}`}>
@@ -167,7 +176,9 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingTop: 8 },
   brand: { fontFamily: FONTS.numMed, fontSize: 20 },
   small: { fontFamily: FONTS.ui, fontSize: 12.5, fontVariant: ['tabular-nums'] },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, flexShrink: 1, maxWidth: '68%' },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, maxWidth: '78%' },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, flexShrink: 1 },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 7, height: 7, borderRadius: 4 },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
   ar: { fontFamily: FONTS.ar, fontSize: 36, lineHeight: 60, textAlign: 'center', writingDirection: 'rtl', maxWidth: 360 },

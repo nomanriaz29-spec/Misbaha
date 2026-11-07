@@ -13,6 +13,7 @@ One codebase for **Android and iOS**, built with Expo (SDK 56, React Native).
   - 3 daily tasbeeh reminders at 9:00 AM, 2:30 PM and 10:00 PM.
   - Tapping a notification opens the matching routine.
   - Reminders are scheduled 7 days ahead and refreshed every time the app opens and by a background task. iOS allows at most 64 pending notifications, and the app uses about 39.
+- **Qibla finder** (compass button in the top bar). The live compass turns with the phone using its heading sensor. It shows the bearing and distance to the Kaaba, turns green and vibrates when you face the Qibla, and prompts you to calibrate when the reading is unreliable.
 - Light and dark mode follow the phone.
 
 ## Project layout

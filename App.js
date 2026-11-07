@@ -16,6 +16,7 @@ import Counter from './src/screens/Counter';
 import Library from './src/screens/Library';
 import Schedule, { buildPlan } from './src/screens/Schedule';
 import Onboarding from './src/screens/Onboarding';
+import Qibla from './src/screens/Qibla';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -113,7 +114,9 @@ export default function App() {
         next={next}
         onOpenLibrary={() => setSheet('lib')}
         onOpenSchedule={() => setSheet('sched')}
+        onOpenQibla={() => setSheet('qibla')}
       />
+      <Qibla visible={sheet === 'qibla'} onClose={() => setSheet(null)} settings={settings} theme={theme} />
       <Library visible={sheet === 'lib'} onClose={() => setSheet(null)} onChoose={choose} progress={progress} theme={theme} />
       <Schedule
         visible={sheet === 'sched'}
