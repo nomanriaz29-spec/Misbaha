@@ -16,6 +16,10 @@ import { registerBackgroundRefresh } from './src/lib/background';
 import { refreshLocationIfMoved } from './src/lib/location';
 import { loadCustom, saveCustom, newCustomId, MAX_CUSTOM } from './src/lib/custom';
 import { loadHistory, saveHistory, flushHistory, record, seedToday } from './src/lib/history';
+import { loadSalah, saveSalah, togglePrayed } from './src/lib/salah';
+import { prayedFromResponse } from './src/lib/salahActions';
+import { syncSalahWidget } from './src/lib/widget';
+import { refreshAndroidWidgets } from './src/widgets/android';
 import { isValidKey, isOpenableKey, isDone, setCustomRegistry } from './src/lib/recommend';
 import { applyLang, needsDirectionChange, setDirection, t } from './src/i18n';
 import Counter from './src/screens/Counter';
@@ -43,6 +47,7 @@ export default function App() {
   const [settings, setSettings] = useState(null);
   const [progress, setProgressState] = useState(null);
   const [history, setHistory] = useState(null);
+  const [salah, setSalah] = useState(null); // prayer tracker
   const [custom, setCustom] = useState(null);
   const [notifOn, setNotifOn] = useState(false);
   const [sheet, setSheet] = useState(null); // 'lib' | 'sched' | 'duas' | 'qibla' | 'history' | 'quran' | 'edit'
@@ -60,7 +65,7 @@ export default function App() {
   // Load saved state.
   useEffect(() => {
     (async () => {
-      const [s, cu, p, h] = await Promise.all([loadSettings(), loadCustom(), loadProgress(), loadHistory()]);
+      const [s, cu, p, h, sl] = await Promise.all([loadSettings(), loadCustom(), loadProgress(), loadHistory(), loadSalah()]);
       setCustomRegistry(cu);
       const lang = applyLang(s.lang);
       if (needsDirectionChange(lang)) setDirection(lang); // applies from the next launch
@@ -68,13 +73,14 @@ export default function App() {
       const seeded = seedToday(h, p);
       if (seeded !== h) saveHistory(seeded);
       setCustom(cu); setSettings(s); setProgressState(p); setHistory(seeded);
+      setSalah(syncSalahWidget(sl).log); // picks up prayers ticked on the iPhone widget
       await setupChannel();
       setNotifOn(await hasNotificationPermission());
       if (s.onboarded) { rescheduleAll(s).catch(() => {}); registerBackgroundRefresh(); checkTravel(s); }
     })();
   }, []);
 
-  const ready = fontsLoaded && settings && progress && history && custom;
+  const ready = fontsLoaded && settings && progress && history && custom && salah;
   const isReady = !!ready;
   useEffect(() => { if (ready) SplashScreen.hideAsync().catch(() => {}); }, [ready]);
 
@@ -124,11 +130,26 @@ export default function App() {
       if (st !== 'active') { flushHistory(); return; }
       setProgressState((cur) => (cur && cur.day !== todayKey() ? { day: todayKey(), total: 0, cur: cur.cur, prog: {} } : cur));
       setNotifOn(await hasNotificationPermission());
+      // prayers ticked on a widget or from a notification while the app was closed
+      const fresh = await loadSalah();
+      const synced = syncSalahWidget(fresh);
+      setSalah(synced.log);
       if (settingsRef.current?.onboarded) { rescheduleAll(settingsRef.current).catch(() => {}); checkTravel(settingsRef.current); }
       setTick((x) => x + 1);
     });
     const timer = setInterval(() => setTick((x) => x + 1), 60000);
     return () => { sub.remove(); clearInterval(timer); };
+  }, []);
+
+  // Prayer tracker: tick or untick one prayer, then update the widgets.
+  const toggleSalah = useCallback((day, key) => {
+    setSalah((cur) => {
+      const next = togglePrayed(cur || {}, day, key);
+      saveSalah(next);
+      syncSalahWidget(next);
+      refreshAndroidWidgets(settingsRef.current);
+      return next;
+    });
   }, []);
 
   const openQuran = (surah) => { setQuranSurah(surah || null); setSheet('quran'); };
@@ -142,6 +163,9 @@ export default function App() {
     if (handled.current === id) return;
     handled.current = id;
     const data = response.notification.request.content.data || {};
+    // "Prayed ✓" button: tick the prayer (salahActions saves it too); nothing to open.
+    const prayed = prayedFromResponse(response);
+    if (prayed) { setSalah((cur) => { const n = { ...cur, [prayed.day]: { ...(cur?.[prayed.day] || {}), [prayed.prayer]: { v: 1, at: Date.now() } } }; saveSalah(n); return n; }); return; }
     const q = typeof data.open === 'string' && /^quran:(\d{1,3})$/.exec(data.open);
     if (q && +q[1] >= 1 && +q[1] <= 114) openQuran(+q[1]);
     else if (isOpenableKey(data.open)) { setProgress((cur) => ({ ...cur, cur: data.open })); setSheet(null); }
@@ -154,6 +178,7 @@ export default function App() {
   // Links from the widgets: misbaha://quran/<surah>/<verse> and misbaha://prayers
   const handleUrl = useCallback((url) => {
     if (typeof url === 'string' && /^misbaha:\/\/prayers\b/.test(url)) { setSheet('sched'); return; }
+    if (typeof url === 'string' && /^misbaha:\/\/salah\b/.test(url)) { setSheet('history'); return; }
     const m = typeof url === 'string' && /^misbaha:\/\/quran\/(\d{1,3})(?:\/(\d{1,3}))?/.exec(url);
     if (!m) return;
     const s = +m[1], a = +(m[2] || 1);
@@ -238,7 +263,7 @@ export default function App() {
           <Text style={{ color: theme.bg, fontFamily: FONTS.ui, fontSize: 15 }}>{azanPlaying ? t('azan.stop') : '✕'}</Text>
         </Pressable>
       )}
-      <History visible={sheet === 'history'} onClose={() => setSheet(null)} history={history} theme={theme} />
+      <History visible={sheet === 'history'} onClose={() => setSheet(null)} history={history} salah={salah} onToggleSalah={toggleSalah} settings={settings} theme={theme} />
       <Duas visible={sheet === 'duas'} onClose={() => setSheet(null)} onChoose={choose} theme={theme} />
       <Qibla visible={sheet === 'qibla'} onClose={() => setSheet(null)} settings={settings} theme={theme} />
       <Quran visible={sheet === 'quran'} onClose={() => setSheet(null)} openSurah={quranSurah} theme={theme} />
@@ -269,6 +294,8 @@ export default function App() {
         notifOn={notifOn}
         onEnableNotifs={async () => { const g = await requestNotificationPermission(); setNotifOn(g); if (g) rescheduleAll(settings); }}
         onLanguage={changeLanguage}
+        salah={salah}
+        onToggleSalah={toggleSalah}
         theme={theme}
       />
     </SafeAreaProvider>

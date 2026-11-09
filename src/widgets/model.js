@@ -4,6 +4,8 @@ import { getTimes, PRAYER_KEYS, fmtTime } from '../lib/prayer';
 import { toHijri, formatHijri } from '../lib/hijri';
 import { verseFor } from '../lib/verseOfDay';
 import { t, getLang, isRTL } from '../i18n';
+import { SALAH, isPrayed, salahStats } from '../lib/salah';
+import { dateKey } from '../lib/history';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -42,3 +44,18 @@ export function nextChange(model) {
 }
 
 export const dayStamp = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+// Prayer tracker widget: today's five prayers, which are ticked, which have started.
+export function salahModel(settings, log, now = new Date()) {
+  const day = dateKey(now);
+  const times = settings?.location ? getTimes(settings.location, settings, now) : null;
+  const items = SALAH.map((key) => ({
+    key,
+    name: t('prayer.' + key),
+    time: times ? fmtTime(times[key]) : '',
+    prayed: isPrayed(log, day, key),
+    due: times ? times[key].getTime() <= now.getTime() : true,
+  }));
+  const st = salahStats(log || {}, now);
+  return { day, items, count: items.filter((i) => i.prayed).length, streak: st.streak, title: t('salah.title'), streakLabel: t('salah.streakShort'), rtl: isRTL(), lang: getLang() };
+}

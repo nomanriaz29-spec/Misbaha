@@ -3,6 +3,8 @@ import { getTimes, PRAYER_KEYS } from './prayer';
 import { t, getLang } from '../i18n';
 import { verseFor, slotStart } from './verseOfDay';
 import { refreshAndroidWidgets } from '../widgets/android';
+import { SALAH, mergeSalah, saveSalah, salahStats } from './salah';
+import { dateKey } from './history';
 
 // Shared with the iOS widget extension through this App Group (see app.json and targets/prayer-widget).
 export const APP_GROUP = 'group.com.nomanriaz.misbaha';
@@ -77,4 +79,34 @@ export function updateVerseWidget(settings) {
     ExtensionStorage.reloadWidget();
     lastVerseWrite = stamp;
   } catch (e) {}
+}
+
+// Prayer tracker widget (iPhone). The app writes the last 8 days of ticks as "salah"; the widget's
+// buttons write their own ticks as "salahEdits" (JSON data, each with the time it was made).
+// Here the widget's ticks are merged into the app's log (newer wins), then "salah" is rewritten.
+// Returns { log, changed } so the app can show ticks made on the widget.
+export function syncSalahWidget(log) {
+  if (!ExtensionStorage) return { log, changed: false };
+  let result = { log, changed: false };
+  try {
+    const storage = new ExtensionStorage(APP_GROUP);
+    const raw = storage.get('salahEdits');
+    if (raw) {
+      result = mergeSalah(log, JSON.parse(raw));
+      if (result.changed) saveSalah(result.log);
+      storage.remove('salahEdits');
+    }
+    const days = {};
+    const now = new Date();
+    for (let i = 0; i < 8; i++) {
+      const d = new Date(now); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - i);
+      const k = dateKey(d);
+      if (result.log[k]) days[k] = result.log[k];
+    }
+    const st = salahStats(result.log, now);
+    const labels = { title: t('salah.title'), names: SALAH.map((k) => t('prayer.' + k)), streak: t('salah.streakShort'), rtl: getLang() !== 'en', lang: getLang() };
+    storage.set('salah', JSON.stringify({ days, streak: st.streak, labels }));
+    ExtensionStorage.reloadWidget();
+  } catch (e) {}
+  return result;
 }

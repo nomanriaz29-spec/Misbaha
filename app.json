@@ -114,6 +114,20 @@
               "previewImage": "./assets/widget-preview/today-prayers.png"
             },
             {
+              "name": "RatbSalah",
+              "label": "Salah tracker",
+              "description": "Tick each prayer as you pray it",
+              "minWidth": "250dp",
+              "minHeight": "50dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "maxResizeWidth": "500dp",
+              "maxResizeHeight": "200dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-preview/salah.png"
+            },
+            {
               "name": "RatbNextPrayer",
               "label": "Next prayer",
               "description": "The next prayer and its time",

@@ -5,13 +5,16 @@ import { getTimes, fmtTime, METHODS, PRAYERS, defaultsForCountry } from '../lib/
 import { detectLocation, CITIES } from '../lib/location';
 import { DAILY } from '../data/adhkar';
 import { FONTS } from '../theme';
-import { ALERT_SOUNDS } from '../lib/notifications';
+import { ALERT_SOUNDS, scheduleStatus, sendTestNotification } from '../lib/notifications';
+import { isPrayed } from '../lib/salah';
+import { dateKey } from '../lib/history';
 import { playSound, stopSound } from '../lib/sounds';
 import { toHijri, formatHijri } from '../lib/hijri';
 import { t, getLang, LANGS } from '../i18n';
 import { pinAndroidWidget, androidWidgetsAvailable } from '../widgets/android';
 
 const OFFSETS = [5, 10, 15, 20, 30];
+const DAY_SHORT = (d) => t('cal.days').split(',')[d.getDay()];
 export const prayerName = (key) => t('prayer.' + key);
 export const soundLabel = (k) => t('sound.' + k);
 
@@ -36,10 +39,20 @@ export function buildPlan(settings, now = new Date()) {
   return items.sort((a, b) => a.at - b.at);
 }
 
-export default function Schedule({ visible, onClose, onStart, settings, update, notifOn, onEnableNotifs, onLanguage, theme }) {
+export default function Schedule({ visible, onClose, onStart, settings, update, notifOn, onEnableNotifs, onLanguage, salah, onToggleSalah, theme }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [widgetMsg, setWidgetMsg] = useState('');
+  const [status, setStatus] = useState(null);
+  const [testMsg, setTestMsg] = useState('');
+  useEffect(() => {
+    if (!visible) { setTestMsg(''); return undefined; }
+    const load = () => scheduleStatus().then(setStatus).catch(() => {});
+    load();
+    const timer = setTimeout(load, 2500); // reminders are rescheduled in the background when settings change
+    return () => clearTimeout(timer);
+  }, [visible, settings, notifOn]);
+  const today = dateKey(new Date());
   const [picker, setPicker] = useState(null); // 'method' | 'city' | 'lang' | null
   const [preview, setPreview] = useState(null); // sound being previewed
   useEffect(() => { if (!visible) { stopSound(); setPreview(null); } }, [visible]);
@@ -96,16 +109,28 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
       <View style={{ gap: 8 }}>
         <Text style={[styles.lbl, { color: theme.muted }]}>{t('prayers.timesIn', { place: settings.location?.name || '' })}</Text>
         <View style={[styles.grid, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-          {['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'].map((k) => (
-            <View key={k} style={styles.cell}>
-              <Text style={{ color: theme.muted, fontSize: 12.5, fontFamily: FONTS.ui }} numberOfLines={1}>{prayerName(k)}</Text>
-              <Text style={{ color: theme.fg, fontSize: 16, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>
-                {times ? fmtTime(times[k]).replace(/ (AM|PM)/, '') : '--'}
-              </Text>
-            </View>
-          ))}
+          {['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'].map((k) => {
+            const trackable = k !== 'sunrise' && salah && onToggleSalah;
+            const started = times && times[k] <= new Date();
+            const on = trackable && isPrayed(salah, today, k);
+            return (
+              <Pressable key={k} style={styles.cell} disabled={!trackable || !started} onPress={() => onToggleSalah(today, k)}
+                accessibilityRole={trackable ? 'checkbox' : undefined} accessibilityState={trackable ? { checked: !!on, disabled: !started } : undefined}>
+                <Text style={{ color: theme.muted, fontSize: 12.5, fontFamily: FONTS.ui }} numberOfLines={1}>{prayerName(k)}</Text>
+                <Text style={{ color: on ? theme.brass : theme.fg, fontSize: 16, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>
+                  {times ? fmtTime(times[k]).replace(/ (AM|PM)/, '') : '--'}
+                </Text>
+                {trackable ? (
+                  <View style={[styles.tick, { borderColor: on ? theme.brass : theme.line, backgroundColor: on ? theme.brass : 'transparent', opacity: started ? 1 : 0.3 }]}>
+                    <Text style={{ color: theme.bg, fontSize: 12, fontFamily: FONTS.uiBold }}>{on ? '✓' : ''}</Text>
+                  </View>
+                ) : <View style={{ height: 20 }} />}
+              </Pressable>
+            );
+          })}
         </View>
         <Text style={{ color: theme.muted, fontSize: 14, fontFamily: FONTS.ui, textAlign: 'center' }}>{hijriToday}</Text>
+        {salah ? <Text style={{ color: theme.muted, fontSize: 13, fontFamily: FONTS.ui, textAlign: 'center' }}>{t('salah.tapHint')}</Text> : null}
       </View>
 
       {!notifOn && (
@@ -161,6 +186,27 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
           </Row>
         )}
       </Group>
+
+      {notifOn ? (
+        <Group label={t('diag.title')} theme={theme}>
+          <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+            <T style={{ fontSize: 15 }}>
+              {status?.pending != null ? t('diag.scheduled', { n: status.pending }) : t('diag.checking')}
+            </T>
+            {status?.next ? (
+              <T style={{ color: theme.muted, fontSize: 14 }}>
+                {t('diag.next', { title: status.next.title, at: `${new Date(status.next.at).toDateString() === new Date().toDateString() ? '' : DAY_SHORT(new Date(status.next.at)) + ' '}${fmtTime(new Date(status.next.at))}` })}
+              </T>
+            ) : null}
+            {status && status.pending === 0 ? <T style={{ color: theme.brass, fontSize: 14 }}>{t('diag.none')}</T> : null}
+            {status?.error ? <T style={{ color: theme.brass, fontSize: 13 }}>{t('diag.error', { msg: status.error })}</T> : null}
+          </Row>
+          <Row style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+            <Btn label={t('diag.test')} onPress={async () => { try { await sendTestNotification(settings); setTestMsg(t('diag.testSent')); } catch (e) { setTestMsg(t('diag.error', { msg: String(e?.message || e) })); } }} />
+            <T style={{ color: theme.muted, fontSize: 13.5, lineHeight: 19 }}>{testMsg || t('diag.help')}</T>
+          </Row>
+        </Group>
+      ) : null}
 
       <Group label={t('plan.title')} theme={theme}>
         {plan.map((x, i) => {
@@ -292,8 +338,8 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
       <Group label={t('widgets.title')} theme={theme}>
         {(Platform.OS === 'android'
           ? [['RatbPrayerTimes', 'widgets.prayerTimes', 'widgets.prayerTimesSub'], ['RatbTodayPrayers', 'widgets.today', 'widgets.todaySub'],
-             ['RatbNextPrayer', 'widgets.next', 'widgets.nextSub'], ['RatbVerse', 'widgets.verse', 'widgets.verseSub']]
-          : [[null, 'widgets.prayerTimes', 'widgets.prayerTimesSubIos'], [null, 'widgets.today', 'widgets.todaySub'], [null, 'widgets.verse', 'widgets.verseSubIos']]
+             ['RatbNextPrayer', 'widgets.next', 'widgets.nextSub'], ['RatbSalah', 'widgets.salah', 'widgets.salahSub'], ['RatbVerse', 'widgets.verse', 'widgets.verseSub']]
+          : [[null, 'widgets.prayerTimes', 'widgets.prayerTimesSubIos'], [null, 'widgets.today', 'widgets.todaySub'], [null, 'widgets.salah', 'widgets.salahSubIos'], [null, 'widgets.verse', 'widgets.verseSubIos']]
         ).map(([name, title, sub], i) => (
           <Row key={title} first={i === 0}>
             <View style={{ flex: 1 }}><T>{t(title)}</T><T style={{ color: theme.muted, fontSize: 14 }}>{t(sub)}</T></View>
@@ -350,6 +396,7 @@ const styles = StyleSheet.create({
   seg: { flexDirection: 'row', borderWidth: 1, borderRadius: 999, padding: 3 },
   segBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999 },
   stepper: { flexDirection: 'row', alignItems: 'center' },
+  tick: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   soundOpt: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 12, borderWidth: 1 },
   stepBtn: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

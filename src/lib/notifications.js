@@ -5,6 +5,7 @@ import { DAILY } from '../data/adhkar';
 import { updateWidget } from './widget';
 import { toHijri, isRamadan } from './hijri';
 import { t } from '../i18n';
+import { dateKey } from './history';
 
 const CHANNEL = 'reminders';
 
@@ -30,7 +31,18 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// "Prayed ✓" button on prayer notifications: ticks the prayer in the tracker without opening the app.
+export const PRAYED_ACTION = 'prayed';
+async function setupCategory() {
+  try {
+    await Notifications.setNotificationCategoryAsync('prayer', [
+      { identifier: PRAYED_ACTION, buttonTitle: t('salah.prayedAction'), options: { opensAppToForeground: false } },
+    ]);
+  } catch (e) {}
+}
+
 export async function setupChannel() {
+  await setupCategory();
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL, {
     name: 'Tasbeeh reminders',
@@ -70,7 +82,23 @@ export async function hasNotificationPermission() {
 //   - an alert AT the prayer time, with the chosen sound (azan by default)
 //   - a tasbeeh reminder a few minutes after it
 // plus the three daily tasbeeh. Safe to call often (app open, settings change, background task).
-export async function rescheduleAll(settings) {
+// What was scheduled last time, for the status line in Prayers (next reminder, errors).
+let lastRun = { at: 0, count: 0, failed: 0, error: '', upcoming: [] };
+export const lastSchedule = () => lastRun;
+
+// Calls are queued so two refreshes (app opening and a settings change at the same moment)
+// can't cancel each other's reminders halfway through.
+let queue = Promise.resolve(0);
+export function rescheduleAll(settings) {
+  const run = queue.then(() => scheduleAll(settings)).catch((e) => {
+    lastRun = { ...lastRun, at: Date.now(), error: String(e?.message || e).slice(0, 200) };
+    return 0;
+  });
+  queue = run;
+  return run;
+}
+
+async function scheduleAll(settings) {
   if (!settings || !settings.location) return 0;
   updateWidget(settings); // the iOS widget works even when notifications are off
   if (!(await hasNotificationPermission())) return 0;
@@ -78,7 +106,20 @@ export async function rescheduleAll(settings) {
   await Notifications.cancelAllScheduledNotificationsAsync();
 
   const now = Date.now();
-  let count = 0;
+  let count = 0, failed = 0, firstError = '';
+  const upcoming = [];
+  // Each reminder is scheduled on its own: one failure must not stop the rest.
+  const add = async (req, at) => {
+    try {
+      await Notifications.scheduleNotificationAsync(req);
+      if (at) upcoming.push({ title: req.content.title, at: +at });
+      return true;
+    } catch (e) {
+      failed++;
+      if (!firstError) firstError = String(e?.message || e).slice(0, 200);
+      return false;
+    }
+  };
   const offsetMs = (settings.offset ?? 15) * 60 * 1000;
   const alertOn = settings.alert?.on !== false;
   const sound = ALERT_SOUNDS[settings.alert?.sound] || ALERT_SOUNDS.azan;
@@ -104,36 +145,34 @@ export async function rescheduleAll(settings) {
       const start = times[p.key];
       const name = t('prayer.' + p.key);
       if (alertOn && start.getTime() > now + 30 * 1000) {
-        await Notifications.scheduleNotificationAsync({
+        if (await add({
           content: {
             title: t('n.timeFor', { name }),
             body: t(isAzan ? 'n.timeBodyAzan' : 'n.timeBody', { name, place }),
-            data: { open: 'set:salah', azan: isAzan },
+            data: { open: 'set:salah', azan: isAzan, prayer: p.key, day: dateKey(start) },
             sound: sound.file,
             interruptionLevel: 'timeSensitive',
+            categoryIdentifier: 'prayer',
           },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: start, channelId: sound.channel },
-        });
-        count++;
+        }, start)) count++;
       }
       const after = new Date(start.getTime() + offsetMs);
       if (after.getTime() > now + 30 * 1000) {
-        await Notifications.scheduleNotificationAsync({
-          content: { title: t('plan.after', { name }), body: t('plan.afterSub.' + p.key), data: { open: p.open }, sound: 'default' },
+        if (await add({
+          content: { title: t('plan.after', { name }), body: t('plan.afterSub.' + p.key), data: { open: p.open, prayer: p.key, day: dateKey(start) }, sound: 'default', categoryIdentifier: 'prayer' },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: after, channelId: CHANNEL },
-        });
-        count++;
+        }, after)) count++;
       }
     }
   }
 
   if (settings.daily) {
     for (const r of DAILY) {
-      await Notifications.scheduleNotificationAsync({
+      if (await add({
         content: { title: t('daily.' + r.id + '.title'), body: t('daily.' + r.id + '.body'), data: { open: r.open }, sound: 'default' },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: r.hour, minute: r.minute, channelId: CHANNEL },
-      });
-      count++;
+      })) count++;
     }
   }
 
@@ -145,21 +184,19 @@ export async function rescheduleAll(settings) {
       if (!isRamadan(h)) continue;
       const at = new Date(getTimes(settings.location, settings, day).fajr.getTime() - 30 * 60000);
       if (at.getTime() <= now + 30 * 1000) continue;
-      await Notifications.scheduleNotificationAsync({
+      if (await add({
         content: { title: t('n.suhoorTitle', { d: h.d }), body: t('n.suhoorBody'), data: { open: 'set:morning' }, sound: 'default' },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL },
-      });
-      count++;
+      })) count++;
     }
   }
 
   // Friday: Surah al-Kahf and salawat, every Friday at 10:00 (weekday 6 = Friday).
   if (settings.friday !== false) {
-    await Notifications.scheduleNotificationAsync({
+    if (await add({
       content: { title: t('n.fridayTitle'), body: t('n.fridayBody'), data: { open: 'quran:18' }, sound: 'default' },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: 6, hour: 10, minute: 0, channelId: CHANNEL },
-    });
-    count++;
+    })) count++;
   }
 
   // White days: the evening before the 13th of the Hijri month (fasting the 13th, 14th and 15th is Sunnah).
@@ -170,11 +207,10 @@ export async function rescheduleAll(settings) {
       if (h.d !== 13 || isRamadan(h)) continue;
       const at = new Date(day); at.setDate(at.getDate() - 1); at.setHours(20, 30, 0, 0);
       if (at.getTime() > now + 30 * 1000) {
-        await Notifications.scheduleNotificationAsync({
+        if (await add({
           content: { title: t('n.whiteTitle'), body: t('n.whiteBody'), data: { open: 'dua:accept' }, sound: 'default' },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL },
-        });
-        count++;
+        })) count++;
       }
       break;
     }
@@ -184,10 +220,31 @@ export async function rescheduleAll(settings) {
   const nudge = new Date();
   nudge.setDate(nudge.getDate() + days - 1);
   nudge.setHours(11, 0, 0, 0);
-  await Notifications.scheduleNotificationAsync({
+  await add({
     content: { title: t('n.nudgeTitle'), body: t('n.nudgeBody'), data: { open: 'set:salah' } },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: nudge, channelId: CHANNEL },
   });
 
+  upcoming.sort((a, b) => a.at - b.at);
+  lastRun = { at: Date.now(), count, failed, error: firstError, upcoming: upcoming.slice(0, 5) };
   return count;
+}
+
+// For the status line in Prayers: how many reminders the phone is holding and the next one.
+export async function scheduleStatus() {
+  let pending = null;
+  try { pending = (await Notifications.getAllScheduledNotificationsAsync()).length; } catch (e) {}
+  const perm = await Notifications.getPermissionsAsync().catch(() => null);
+  const next = lastRun.upcoming.find((u) => u.at > Date.now()) || null;
+  return { pending, granted: !!perm?.granted, next, failed: lastRun.failed, error: lastRun.error };
+}
+
+// Sends a notification in 5 seconds with the chosen prayer sound, to check sound and banners.
+export async function sendTestNotification(settings) {
+  await setupChannel();
+  const sound = ALERT_SOUNDS[settings?.alert?.sound] || ALERT_SOUNDS.azan;
+  await Notifications.scheduleNotificationAsync({
+    content: { title: t('test.title'), body: t('test.body'), data: { open: 'set:salah' }, sound: sound.file, interruptionLevel: 'timeSensitive' },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5, channelId: sound.channel },
+  });
 }

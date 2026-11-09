@@ -7,5 +7,6 @@ struct RatbWidgets: WidgetBundle {
     PrayerTimesWidget()
     TodayPrayersWidget()
     VerseOfTheDayWidget()
+    SalahTrackerWidget()
   }
 }

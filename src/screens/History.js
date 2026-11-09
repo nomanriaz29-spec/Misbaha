@@ -4,6 +4,7 @@ import Sheet, { Group } from '../components/Sheet';
 import { dateKey, stats } from '../lib/history';
 import { labelFor, setName } from '../lib/recommend';
 import { t } from '../i18n';
+import SalahCard from '../components/SalahCard';
 import { SETS } from '../data/adhkar';
 import { FONTS, FILL } from '../theme';
 
@@ -15,7 +16,7 @@ const DAYS = () => t('cal.days').split(','); // Sunday first
 const level = (n) => (n <= 0 ? 0 : n < 100 ? 1 : n < 300 ? 2 : 3);
 const LEVEL_OPACITY = [0, 0.28, 0.55, 0.9];
 
-export default function History({ visible, onClose, history, theme }) {
+export default function History({ visible, onClose, history, salah, onToggleSalah, settings, theme }) {
   const today = new Date();
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [sel, setSel] = useState(dateKey(today));
@@ -95,6 +96,8 @@ export default function History({ visible, onClose, history, theme }) {
           </Text>
           <Text style={[styles.dayTotal, { color: theme.brass }]}>{(day?.total || 0).toLocaleString()}</Text>
         </View>
+
+        {salah ? <SalahCard salah={salah} day={sel} onToggle={onToggleSalah} settings={settings} theme={theme} showStats={isToday} /> : null}
 
         <Group label={t('library.routines')} theme={theme}>
           {Object.entries(SETS).map(([id, set], i) => {

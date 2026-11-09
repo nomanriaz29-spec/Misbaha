@@ -12,8 +12,8 @@ import { t } from '../../i18n';
 // Each takes a model from ../model.js, a colour scheme and the widget's size in dp.
 
 export const THEMES = {
-  dark: { bg: '#0F1A19', fg: '#E9E5D9', muted: '#8FA29D', brass: '#D6A651', rule: '#243634', hl: '#1D2B29' },
-  light: { bg: '#F6F2E8', fg: '#1C2624', muted: '#66756F', brass: '#9C7128', rule: '#E2DACB', hl: '#EDE4D2' },
+  dark: { bg: '#0F1A19', fg: '#E9E5D9', muted: '#8FA29D', brass: '#D6A651', rule: '#2E4441', hl: '#1D2B29', ok: '#6CC199' },
+  light: { bg: '#F6F2E8', fg: '#1C2624', muted: '#66756F', brass: '#9C7128', rule: '#D9CFBD', hl: '#EDE4D2', ok: '#2F7A55' },
 };
 
 const PRAYERS_URI = 'misbaha://prayers';
@@ -175,7 +175,44 @@ export function VerseWidget({ v, c, height = 150 }) {
   );
 }
 
+// 4x1 / 4x2: tick each prayer. Taps run in the background (widgetTaskHandler) and redraw the widget.
+export function SalahWidget({ s, c, height = 110 }) {
+  if (!s) return <NoData c={c} text={t('widget.open')} />;
+  const tall = height > 130;
+  const short = height < 95; // 4x1: smaller circles so the names fit
+  const dot = tall ? 38 : short ? 22 : 30;
+  const items = s.rtl ? [...s.items].reverse() : s.items;
+  return (
+    <Root c={c} uri="misbaha://salah" padding={tall ? 14 : short ? 7 : 10}>
+      <Line
+        rtl={s.rtl}
+        style={{ marginBottom: tall ? 10 : short ? 2 : 6, paddingHorizontal: short ? 4 : 0 }}
+        start={<T text={s.title.toUpperCase()} size={short ? 10 : 11} color={c.brass} bold />}
+        end={<T text={`${s.count}/5${s.streak ? `  ·  ${s.streak} ${s.streakLabel}` : ''}`} size={11} color={s.count === 5 ? c.ok || c.brass : c.muted} />}
+      />
+      <FlexWidget style={{ flexDirection: 'row', width: 'match_parent', flex: 1, justifyContent: 'space-between', alignItems: 'center' }}>
+        {items.map((it) => (
+          <FlexWidget
+            key={it.key}
+            clickAction={it.due ? 'SALAH_TOGGLE' : 'OPEN_URI'}
+            clickActionData={it.due ? { k: it.key, d: s.day } : { uri: 'misbaha://salah' }}
+            style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 'match_parent' }}
+          >
+            <FlexWidget style={{ width: dot, height: dot, borderRadius: dot / 2, borderWidth: 2, borderColor: it.prayed ? c.brass : c.rule,
+              backgroundColor: it.prayed ? c.brass : c.bg, justifyContent: 'center', alignItems: 'center' }}>
+              <T text={it.prayed ? '✓' : ''} size={dot * 0.48} color={c.bg} bold />
+            </FlexWidget>
+            <T text={it.name} size={tall ? 12 : short ? 10 : 11} color={it.prayed ? c.brass : it.due ? c.fg : c.muted} bold={it.prayed} align="center" />
+            {tall ? <T text={it.time} size={10} color={c.muted} align="center" /> : null}
+          </FlexWidget>
+        ))}
+      </FlexWidget>
+    </Root>
+  );
+}
+
 export const WIDGETS = {
+  RatbSalah: (ctx) => <SalahWidget {...ctx} />,
   RatbPrayerTimes: (ctx) => <PrayerTimesWidget {...ctx} />,
   RatbTodayPrayers: (ctx) => <TodayPrayersWidget {...ctx} />,
   RatbNextPrayer: (ctx) => <NextPrayerWidget {...ctx} />,

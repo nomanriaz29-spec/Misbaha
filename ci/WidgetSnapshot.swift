@@ -247,6 +247,53 @@ struct WidgetSnapshot {
     if let d = loadVerses(defaults: verseDefaults("hourAr")), let e = buildVerseTimeline(now: at(0, 14, 20), data: d).0.first {
       save(lockV(e, .accessoryCircular, circ), circ, "37-verse-lock-circle-hourly-arabic")
     }
+
+    // --- Salah tracker ---------------------------------------------------------
+    let sd = UserDefaults(suiteName: "salah-test")!
+    sd.removeObject(forKey: "salahEdits")
+    let today0 = verseDayKey(at(0, 12, 0))
+    sd.set(#"{"days":{"\#(today0)":{"fajr":{"v":1,"at":1000},"dhuhr":{"v":1,"at":1000}}},"streak":4,"labels":{"title":"Salah tracker","names":["Fajr","Dhuhr","Asr","Maghrib","Isha"],"streak":"day streak","rtl":false,"lang":"en"}}"#, forKey: "salah")
+    var st0 = loadSalahState(defaults: sd, now: at(0, 14, 20))
+    check(salahPrayed(st0, day: today0, key: "fajr") && !salahPrayed(st0, day: today0, key: "asr"), "salah: reads the app's ticks")
+    let e0 = makeSalahEntry(at: at(0, 14, 20), state: st0, prayers: data)
+    check(e0.count == 2 && e0.items.count == 5, "salah: 2 of 5 prayed")
+    check(e0.items[1].due && !e0.items[2].due, "salah: at 14:20 Dhuhr can be ticked, Asr (15:15) not yet")
+    check(toggleSalah(day: today0, prayer: "asr", defaults: sd, now: at(0, 15, 30)) == true, "salah: tapping Asr on the widget ticks it")
+    st0 = loadSalahState(defaults: sd, now: at(0, 15, 30))
+    check(salahPrayed(st0, day: today0, key: "asr"), "salah: the widget's tick is saved for the app")
+    toggleSalah(day: today0, prayer: "fajr", defaults: sd, now: at(0, 15, 31))
+    st0 = loadSalahState(defaults: sd, now: at(0, 15, 31))
+    check(!salahPrayed(st0, day: today0, key: "fajr"), "salah: tapping again unticks (newer tick wins over the app's)")
+    toggleSalah(day: today0, prayer: "fajr", defaults: sd, now: at(0, 15, 32))
+    for k in ["maghrib", "isha"] { toggleSalah(day: today0, prayer: k, defaults: sd, now: at(0, 20, 0)) }
+    let full = makeSalahEntry(at: at(0, 20, 0), state: loadSalahState(defaults: sd, now: at(0, 20, 0)), prayers: data)
+    check(full.count == 5, "salah: all five ticked")
+    let (stl, stPolicy) = buildSalahTimeline(now: at(0, 14, 20), state: loadSalahState(defaults: sd), prayers: data)
+    check(stl.count == 5 && stl.last?.date == cal.startOfDay(for: at(1, 0, 0)), "salah: refreshes as Asr, Maghrib and Isha begin, and at midnight (\(stl.count) entries)")
+    check(stPolicy != .never, "salah: keeps refreshing")
+    if let edits = sd.data(forKey: "salahEdits"), let json = String(data: edits, encoding: .utf8) {
+      check(json.contains(today0) && json.contains("\"at\""), "salah: edits are JSON data the app can read back")
+    } else { check(false, "salah: edits saved as data") }
+
+    func sview(_ e: SalahEntry, _ f: WidgetFamily, _ size: CGSize, lockStyle: Bool = false) -> some View {
+      SalahWidgetView(entry: e, familyOverride: f)
+        .padding(lockStyle ? 0 : 14)
+        .foregroundStyle(.white)
+        .frame(width: size.width, height: size.height)
+        .background(lockStyle ? Color(white: 0.22) : homeBg)
+        .clipShape(RoundedRectangle(cornerRadius: lockStyle ? (f == .accessoryCircular ? size.width / 2 : 12) : 22, style: .continuous))
+    }
+    save(sview(e0, .systemSmall, small), small, "38-salah-small")
+    save(sview(e0, .systemMedium, medium), medium, "39-salah-medium")
+    save(sview(full, .systemMedium, medium), medium, "40-salah-medium-done")
+    save(sview(e0, .accessoryRectangular, CGSize(width: 172, height: 76), lockStyle: true), CGSize(width: 172, height: 76), "41-salah-lock-rect")
+    save(sview(e0, .accessoryCircular, CGSize(width: 76, height: 76), lockStyle: true), CGSize(width: 76, height: 76), "42-salah-lock-circle")
+    var arState = loadSalahState(defaults: sd, now: at(0, 14, 20))
+    arState.labels = SalahLabels(title: "متابعة الصلاة", names: ["الفجر", "الظهر", "العصر", "المغرب", "العشاء"], streak: "أيام متتالية", rtl: true, lang: "ar")
+    let arE = makeSalahEntry(at: at(0, 14, 20), state: arState, prayers: data)
+    save(sview(arE, .systemSmall, small), small, "43-salah-small-arabic")
+    save(sview(arE, .systemMedium, medium), medium, "44-salah-medium-arabic")
+    save(sview(sampleSalahEntry(), .systemSmall, small), small, "45-salah-gallery")
     _ = fmt
     return failed
   }
