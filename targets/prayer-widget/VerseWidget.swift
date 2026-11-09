@@ -209,6 +209,7 @@ struct VerseWidgetView: View {
       case .systemLarge:
         VStack(alignment: .leading, spacing: 14) {
           header(v)
+          Spacer(minLength: 0)
           ArabicText(text: v.arabic, size: 25, lines: 7).foregroundStyle(vFg)
           if let tr = v.translation {
             Rectangle().fill(vRule).frame(height: 1)
@@ -223,6 +224,7 @@ struct VerseWidgetView: View {
       default: // systemMedium
         VStack(alignment: .leading, spacing: 7) {
           header(v)
+          Spacer(minLength: 0)
           ArabicText(text: v.arabic, size: v.translation == nil ? 22 : 18, lines: v.translation == nil ? 4 : 2)
             .foregroundStyle(vFg)
           if let tr = v.translation {
