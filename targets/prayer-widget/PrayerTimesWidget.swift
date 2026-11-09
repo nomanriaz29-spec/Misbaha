@@ -2,7 +2,7 @@ import WidgetKit
 import SwiftUI
 
 // The app writes 30 days of prayer times into this App Group (src/lib/widget.js).
-private let appGroup = "group.com.nomanriaz.misbaha"
+let appGroup = "group.com.nomanriaz.misbaha"
 private let prayerNames = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
 private extension Color {
@@ -37,9 +37,9 @@ private struct Payload: Decodable {
   let days: [Day]
 }
 
-private func loadPrayers() -> (place: String, prayers: [Prayer])? {
+func loadPrayers(defaults: UserDefaults? = UserDefaults(suiteName: appGroup)) -> (place: String, prayers: [Prayer])? {
   guard
-    let raw = UserDefaults(suiteName: appGroup)?.string(forKey: "prayers"),
+    let raw = defaults?.string(forKey: "prayers"),
     let data = raw.data(using: .utf8),
     let payload = try? JSONDecoder().decode(Payload.self, from: data)
   else { return nil }
@@ -60,7 +60,7 @@ struct PrayerEntry: TimelineEntry {
   let day: [Prayer] // the five prayers of the day the next prayer falls on
 }
 
-private func makeEntry(at date: Date, place: String, prayers: [Prayer]) -> PrayerEntry {
+func makeEntry(at date: Date, place: String, prayers: [Prayer]) -> PrayerEntry {
   let next = prayers.first { $0.date > date }
   let anchor = next?.date ?? date
   let day = prayers.filter { Calendar.current.isDate($0.date, inSameDayAs: anchor) }
@@ -68,7 +68,7 @@ private func makeEntry(at date: Date, place: String, prayers: [Prayer]) -> Praye
 }
 
 // Shown in the widget gallery before the app has saved any times.
-private func sampleEntry() -> PrayerEntry {
+func sampleEntry() -> PrayerEntry {
   let start = Calendar.current.startOfDay(for: Date())
   let minutes = [5 * 60 + 11, 12 * 60 + 6, 15 * 60 + 15, 17 * 60 + 38, 18 * 60 + 54]
   let prayers = zip(prayerNames, minutes).map { pair in
@@ -95,17 +95,20 @@ struct Provider: TimelineProvider {
   // One entry now, then one at each of the next 10 prayer times, so the widget
   // moves on to the next prayer the moment one begins.
   func getTimeline(in context: Context, completion: @escaping (Timeline<PrayerEntry>) -> Void) {
-    let now = Date()
-    guard let data = loadPrayers() else {
-      let empty = PrayerEntry(date: now, place: "", next: nil, day: [])
-      completion(Timeline(entries: [empty], policy: .after(now.addingTimeInterval(3600))))
-      return
-    }
-    var dates = [now]
-    dates.append(contentsOf: data.prayers.map(\.date).filter { $0 > now }.prefix(10))
-    let entries = dates.map { makeEntry(at: $0, place: data.place, prayers: data.prayers) }
-    completion(Timeline(entries: entries, policy: .atEnd))
+    let (entries, policy) = buildTimeline(now: Date(), data: loadPrayers())
+    completion(Timeline(entries: entries, policy: policy))
   }
+}
+
+// Pure function so it can be tested outside WidgetKit (see ci/WidgetSnapshot.swift).
+func buildTimeline(now: Date, data: (place: String, prayers: [Prayer])?) -> ([PrayerEntry], TimelineReloadPolicy) {
+  guard let data = data, !data.prayers.isEmpty else {
+    return ([PrayerEntry(date: now, place: "", next: nil, day: [])], .after(now.addingTimeInterval(3600)))
+  }
+  var dates = [now]
+  dates.append(contentsOf: data.prayers.map(\.date).filter { $0 > now }.prefix(10))
+  let entries = dates.map { makeEntry(at: $0, place: data.place, prayers: data.prayers) }
+  return (entries, .atEnd)
 }
 
 // MARK: - Views
@@ -167,8 +170,10 @@ private struct DayList: View {
 }
 
 struct PrayerWidgetView: View {
-  @Environment(\.widgetFamily) private var family
+  @Environment(\.widgetFamily) private var envFamily
   let entry: PrayerEntry
+  var familyOverride: WidgetFamily? = nil // used by the snapshot test
+  private var family: WidgetFamily { familyOverride ?? envFamily }
 
   var body: some View {
     content

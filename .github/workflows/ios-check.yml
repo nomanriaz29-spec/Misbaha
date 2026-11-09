@@ -1,0 +1,64 @@
+name: iOS widget and watch check
+
+# Compiles the Swift code with Apple's real toolchain and tests the widget on an
+# iOS simulator: timeline logic plus a PNG of every widget size (see the artifact).
+on:
+  push:
+    paths:
+      - 'targets/**'
+      - 'watch/**'
+      - 'ci/**'
+      - '.github/workflows/ios-check.yml'
+  workflow_dispatch:
+
+jobs:
+  widget:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+
+      - name: Typecheck widget (iOS 17+)
+        run: |
+          xcrun --sdk iphonesimulator swiftc -typecheck \
+            -target arm64-apple-ios17.0-simulator \
+            targets/prayer-widget/*.swift
+
+      - name: Typecheck Apple Watch app
+        if: hashFiles('watch/*.swift') != ''
+        run: |
+          xcrun --sdk watchsimulator swiftc -typecheck \
+            -target arm64-apple-watchos10.0-simulator \
+            watch/*.swift
+
+      - name: Build widget test harness
+        run: |
+          mkdir -p build out
+          xcrun --sdk iphonesimulator swiftc -parse-as-library \
+            -target arm64-apple-ios17.0-simulator \
+            targets/prayer-widget/PrayerTimesWidget.swift ci/WidgetSnapshot.swift \
+            -o build/widget-snapshot
+
+      - name: Run widget tests on a simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)['devices']
+          print(next(x['udid'] for k, v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "Simulator: $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          SIMCTL_CHILD_TZ=Asia/Dubai xcrun simctl spawn "$UDID" "$PWD/build/widget-snapshot" "$PWD/out" | tee out/results.txt
+          exit ${PIPESTATUS[0]}
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: widget-check
+          path: out/
