@@ -62,7 +62,7 @@ export default function Qibla({ visible, onClose, settings, theme }) {
     (async () => {
       setError('');
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') { setError('Allow location for Misbaha to use the live compass.'); return; }
+      if (status !== 'granted') { setError('Allow location for Ratb to use the live compass.'); return; }
       try {
         sub = await Location.watchHeadingAsync((h) => {
           if (cancelled) return;

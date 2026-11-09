@@ -1,4 +1,4 @@
-# Misbaha — Tasbeeh counter with prayer reminders
+# Ratb — Tasbeeh counter with prayer reminders
 
 One codebase for **Android and iOS**, built with Expo (SDK 58, React Native 0.88).
 
@@ -68,7 +68,7 @@ Install **Expo Go** from the App Store or Play Store and scan the QR code.
 In `app.json`:
 
 - `ios.bundleIdentifier` and `android.package`: this is set to `com.nomanriaz.misbaha`. **You cannot change these after the first store release.**
-- `name` if you want a different store name. "Misbaha" may already be taken on the stores.
+- `name` if you want a different store name. "Ratb" may already be taken on the stores.
 
 ## 3. Build with EAS (Expo's cloud build service)
 
@@ -101,7 +101,7 @@ You don't need a Mac. EAS builds iOS in the cloud.
 3. **Data safety form:** declare *Approximate location*: collected, *processed ephemerally*, *not shared*, purpose *App functionality*. The Android city-name lookup goes through Google's geocoder, so declaring it is the safe choice. Declare nothing else. There is no account, so answer *no* to data deletion requests.
    **Content rating:** answer the questionnaire. Everything is "no", which gives a rating of Everyone / 3+.
 4. **Privacy policy URL:** host `PRIVACY.md` somewhere public. A free GitHub Pages or Notion page works.
-5. **Exact alarms:** the app requests `SCHEDULE_EXACT_ALARM` so the azan plays at the exact prayer time. In Play Console's **App content → Exact alarm** declaration, choose that the app delivers time-critical alerts the user turns on (prayer times). On Android 14 and later, users allow it under Settings → Apps → Misbaha → Alarms & reminders, and the app links there from Prayers. The app never requests background location.
+5. **Exact alarms:** the app requests `SCHEDULE_EXACT_ALARM` so the azan plays at the exact prayer time. In Play Console's **App content → Exact alarm** declaration, choose that the app delivers time-critical alerts the user turns on (prayer times). On Android 14 and later, users allow it under Settings → Apps → Ratb → Alarms & reminders, and the app links there from Prayers. The app never requests background location.
 6. New personal developer accounts must run a **closed test with at least 12 testers for 14 days** before Google allows a production release. Check the current rule in Play Console.
 7. Upload with `npm run submit:android`, or drag the `.aab` into Play Console.
 
@@ -122,7 +122,7 @@ You don't need a Mac. EAS builds iOS in the cloud.
 3. On the iPhone: Settings → Privacy & Security → **Developer Mode** → on, then restart.
 4. Build: `npm run build:ios:test`. Sign in with your Apple ID when asked, and let EAS create the certificates and profiles. It also sets up the widget's App Group.
 5. When the build finishes, open its link on the iPhone and tap **Install**.
-6. Open Misbaha once so it saves the prayer times. Then long-press the home screen → **+** → search **Misbaha** → add the widget. For the lock screen: long-press the lock screen → Customize → Lock Screen → add widget.
+6. Open Ratb once so it saves the prayer times. Then long-press the home screen → **+** → search **Ratb** → add the widget. For the lock screen: long-press the lock screen → Customize → Lock Screen → add widget.
 
 To test with friends instead, build with `npm run build:ios` and send it to **TestFlight** with `npm run submit:ios`.
 

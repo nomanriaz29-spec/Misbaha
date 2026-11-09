@@ -134,7 +134,7 @@ export async function rescheduleAll(settings) {
   nudge.setDate(nudge.getDate() + days - 1);
   nudge.setHours(11, 0, 0, 0);
   await Notifications.scheduleNotificationAsync({
-    content: { title: 'Keep your prayer alerts running', body: 'Open Misbaha to refresh the coming days’ prayer times.', data: { open: 'set:salah' } },
+    content: { title: 'Keep your prayer alerts running', body: 'Open Ratb to refresh the coming days’ prayer times.', data: { open: 'set:salah' } },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: nudge, channelId: CHANNEL },
   });
 

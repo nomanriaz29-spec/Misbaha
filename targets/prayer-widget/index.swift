@@ -2,7 +2,7 @@ import WidgetKit
 import SwiftUI
 
 @main
-struct MisbahaWidgets: WidgetBundle {
+struct RatbWidgets: WidgetBundle {
   var body: some Widget {
     PrayerTimesWidget()
   }

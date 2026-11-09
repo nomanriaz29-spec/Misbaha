@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Misbaha",
+    "name": "Ratb",
     "slug": "misbaha",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -55,7 +55,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Misbaha uses your location to calculate accurate prayer times and remind you after each prayer."
+          "locationWhenInUsePermission": "Ratb uses your location to calculate accurate prayer times and remind you after each prayer."
         }
       ],
       [

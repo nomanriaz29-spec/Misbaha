@@ -85,7 +85,7 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
     <SafeAreaView style={[styles.wrap, { backgroundColor: theme.bg }]}>
       <View style={styles.top}>
         <Pressable onPress={onOpenHistory} accessibilityRole="button" accessibilityLabel="Your history" hitSlop={8}>
-          <Text style={[styles.brand, { color: theme.fg }]}>Misbaha</Text>
+          <Text style={[styles.brand, { color: theme.fg }]}>Ratb</Text>
           <Text style={[styles.small, { color: theme.muted }]}>Today {progress.total.toLocaleString()} <Text style={{ color: theme.brass }}>· History ›</Text></Text>
         </Pressable>
         <View style={styles.topRight}>

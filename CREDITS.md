@@ -16,7 +16,7 @@ Source file SHA-1 (lossless copy): 707c3918e8b1e5fd76e45b18b1583e2d78f36bac
 
 ## Alarm tone
 
-`assets/sounds/alarm.wav` was generated for Misbaha (synthesised tones) and has no third-party rights.
+`assets/sounds/alarm.wav` was generated for Ratb (synthesised tones) and has no third-party rights.
 
 ## Libraries
 

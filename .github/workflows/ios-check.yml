@@ -11,6 +11,9 @@ on:
       - '.github/workflows/ios-check.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write   # lets the job save widget snapshots to the ci-widget-snapshots branch
+
 jobs:
   widget:
     runs-on: macos-15
@@ -55,6 +58,17 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           SIMCTL_CHILD_TZ=Asia/Dubai xcrun simctl spawn "$UDID" "$PWD/build/widget-snapshot" "$PWD/out" | tee out/results.txt
           exit ${PIPESTATUS[0]}
+
+      - name: Save snapshots to the ci-widget-snapshots branch
+        if: always()
+        run: |
+          cd out
+          git init -q -b ci-widget-snapshots
+          git config user.name "widget-check"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Widget snapshots for ${GITHUB_SHA::7}" || exit 0
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ci-widget-snapshots
 
       - name: Upload results
         if: always()

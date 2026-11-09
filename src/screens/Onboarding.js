@@ -63,7 +63,7 @@ export default function Onboarding({ theme, onDone }) {
             <>
               <Text style={[styles.h, { color: theme.fg }]}>Prayer times wherever you are</Text>
               <Text style={[styles.p, { color: theme.muted }]}>
-                Misbaha uses your location to calculate the five prayer times and remind you to do your tasbeeh after each one. Your location stays on your phone.
+                Ratb uses your location to calculate the five prayer times and remind you to do your tasbeeh after each one. Your location stays on your phone.
               </Text>
               <View style={styles.actions}>
                 <Primary label="Use my location" onPress={askLocation} />

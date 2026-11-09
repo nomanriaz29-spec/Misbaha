@@ -54,7 +54,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
     try {
       const loc = await detectLocation();
       if (loc.denied) {
-        setMsg('Location is off for Misbaha. Turn it on in Settings, or choose a city.');
+        setMsg('Location is off for Ratb. Turn it on in Settings, or choose a city.');
       } else {
         update({ location: loc, ...defaultsForCountry(loc.country), methodAuto: true });
         setMsg('Updated to ' + loc.name);
@@ -142,7 +142,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         {alert.on && Platform.OS === 'android' && (
           <Row style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
             <T style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
-              For the alert to play exactly on time, allow “Alarms & reminders” for Misbaha in your phone’s settings.
+              For the alert to play exactly on time, allow “Alarms & reminders” for Ratb in your phone’s settings.
             </T>
             <Btn label="Open phone settings" onPress={() => Linking.openSettings()} />
           </Row>

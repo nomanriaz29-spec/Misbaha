@@ -229,10 +229,10 @@ struct PrayerWidgetView: View {
         NextBlock(entry: entry, next: next)
       }
     } else if family == .accessoryInline {
-      Text("Open Misbaha")
+      Text("Open Ratb")
     } else {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Misbaha")
+        Text("Ratb")
           .font(.system(size: 15, weight: .semibold, design: .serif))
           .foregroundStyle(fg)
         Text("Open the app to load prayer times.")
