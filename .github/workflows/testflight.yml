@@ -1,0 +1,74 @@
+# Builds the iPhone app on Expo's servers and sends it to TestFlight.
+# Run it from GitHub: Actions tab -> "TestFlight" -> Run workflow.
+# Needs one secret: EXPO_TOKEN (expo.dev -> Account settings -> Access tokens).
+# Apple signing and the App Store Connect key are the ones EAS saved when you first built
+# and submitted from your computer.
+name: TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which app to build
+        type: choice
+        options: [ios, android, all]
+        default: ios
+
+permissions:
+  contents: write # to save the updated package-lock.json back to the repo
+
+concurrency:
+  group: store-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check the Expo token is set
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Add the EXPO_TOKEN secret: GitHub repo -> Settings -> Secrets and variables -> Actions -> New repository secret."
+            exit 1
+          fi
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install packages
+        run: |
+          npm install --no-audit --no-fund
+          # Packages added in code but not yet in package-lock.json
+          npx expo install expo-updates react-native-android-widget
+          npx expo install --check || npx expo install --fix
+
+      - name: Save the updated lockfile
+        run: |
+          if ! git diff --quiet package.json package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package.json package-lock.json
+            git commit -m "Update package-lock.json for the store build"
+            git push
+          fi
+
+      - name: Check the app config
+        run: npx expo-doctor || true
+
+      - name: Build and submit
+        run: |
+          eas build --platform ${{ inputs.platform }} --profile production \
+            --non-interactive --auto-submit --no-wait
+          echo "### Build started on Expo" >> "$GITHUB_STEP_SUMMARY"
+          echo "Follow it at https://expo.dev (Builds). When it finishes it is uploaded to App Store Connect automatically; TestFlight shows it after Apple's processing (usually 10-30 minutes)." >> "$GITHUB_STEP_SUMMARY"
