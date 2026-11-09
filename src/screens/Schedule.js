@@ -7,6 +7,7 @@ import { DAILY } from '../data/adhkar';
 import { FONTS } from '../theme';
 import { ALERT_SOUNDS, scheduleStatus, sendTestNotification } from '../lib/notifications';
 import { isPrayed } from '../lib/salah';
+import { jamaatTimes } from '../lib/mosque';
 import { dateKey } from '../lib/history';
 import { playSound, stopSound } from '../lib/sounds';
 import { toHijri, formatHijri } from '../lib/hijri';
@@ -39,7 +40,7 @@ export function buildPlan(settings, now = new Date()) {
   return items.sort((a, b) => a.at - b.at);
 }
 
-export default function Schedule({ visible, onClose, onStart, settings, update, notifOn, onEnableNotifs, onLanguage, salah, onToggleSalah, theme }) {
+export default function Schedule({ visible, onClose, onStart, settings, update, notifOn, onEnableNotifs, onLanguage, salah, onToggleSalah, onOpenMosque, theme }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [widgetMsg, setWidgetMsg] = useState('');
@@ -53,6 +54,7 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
     return () => clearTimeout(timer);
   }, [visible, settings, notifOn]);
   const today = dateKey(new Date());
+  const jt = settings.mosque ? jamaatTimes(settings, new Date()) : null;
   const [picker, setPicker] = useState(null); // 'method' | 'city' | 'lang' | null
   const [preview, setPreview] = useState(null); // sound being previewed
   useEffect(() => { if (!visible) { stopSound(); setPreview(null); } }, [visible]);
@@ -120,6 +122,9 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
                 <Text style={{ color: on ? theme.brass : theme.fg, fontSize: 16, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>
                   {times ? fmtTime(times[k]).replace(/ (AM|PM)/, '') : '--'}
                 </Text>
+                {jt && jt[k] ? (
+                  <Text style={{ color: theme.brass, fontSize: 11.5, fontFamily: FONTS.ui }} numberOfLines={1}>{t('jamaat.short')} {fmtTime(jt[k]).replace(/ (AM|PM)/, '')}</Text>
+                ) : null}
                 {trackable ? (
                   <View style={[styles.tick, { borderColor: on ? theme.brass : theme.line, backgroundColor: on ? theme.brass : 'transparent', opacity: started ? 1 : 0.3 }]}>
                     <Text style={{ color: theme.bg, fontSize: 12, fontFamily: FONTS.uiBold }}>{on ? '✓' : ''}</Text>
@@ -132,6 +137,22 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         <Text style={{ color: theme.muted, fontSize: 14, fontFamily: FONTS.ui, textAlign: 'center' }}>{hijriToday}</Text>
         {salah ? <Text style={{ color: theme.muted, fontSize: 13, fontFamily: FONTS.ui, textAlign: 'center' }}>{t('salah.tapHint')}</Text> : null}
       </View>
+
+      {onOpenMosque ? (
+        <Group label={t('mosque.title')} theme={theme}>
+          <Row first>
+            <View style={{ flex: 1 }}>
+              <T numberOfLines={1} style={{ fontFamily: settings.mosque ? FONTS.uiBold : FONTS.ui }}>{settings.mosque ? settings.mosque.name : t('mosque.notSet')}</T>
+              <T style={{ color: theme.muted, fontSize: 14 }}>
+                {settings.mosque
+                  ? (jt ? `${t(jt.isJumuah ? 'jamaat.jumuah' : 'prayer.dhuhr')} ${fmtTime(jt.dhuhr)}` : '') + (settings.mosque.remind ? '  ·  ' + t('mosque.remindShort', { n: settings.mosque.remind }) : '')
+                  : t('mosque.notSetSub')}
+              </T>
+            </View>
+            <Btn label={settings.mosque ? t('common.change') : t('mosque.findShort')} onPress={onOpenMosque} />
+          </Row>
+        </Group>
+      ) : null}
 
       {!notifOn && (
         <Group theme={theme}>

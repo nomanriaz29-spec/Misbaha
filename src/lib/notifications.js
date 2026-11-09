@@ -6,6 +6,8 @@ import { updateWidget } from './widget';
 import { toHijri, isRamadan } from './hijri';
 import { t } from '../i18n';
 import { dateKey } from './history';
+import { jamaatTimes } from './mosque';
+import { fmtTime } from './prayer';
 
 const CHANNEL = 'reminders';
 
@@ -133,7 +135,9 @@ async function scheduleAll(settings) {
   // one white-days reminder and the refresh nudge. The rest are shared out per day.
   const fixed = (settings.daily ? 3 : 0) + (settings.friday !== false ? 1 : 0) + (settings.whiteDays !== false ? 1 : 0) + 1;
   const ramadanSoon = ramadanOn && [0, 3, 6].some((d) => isRamadan(toHijri(new Date(Date.now() + d * DAY), adjust)));
-  const perDay = enabled.length * (alertOn ? 2 : 1) + (ramadanSoon ? 1 : 0);
+  const mosque = settings.mosque;
+  const jamaatOn = !!(mosque && mosque.remind > 0);
+  const perDay = enabled.length * (alertOn ? 2 : 1) + (jamaatOn ? enabled.length : 0) + (ramadanSoon ? 1 : 0);
   const days = perDay ? Math.max(2, Math.min(7, Math.floor((IOS_PENDING_LIMIT - fixed) / perDay))) : 7;
 
   for (let d = 0; d < days; d++) {
@@ -141,7 +145,26 @@ async function scheduleAll(settings) {
     day.setHours(12, 0, 0, 0);
     day.setDate(day.getDate() + d);
     const times = getTimes(settings.location, settings, day);
+    const jt = jamaatOn ? jamaatTimes(settings, day) : null;
     for (const p of enabled) {
+      // Reminder before jamaat at the user's mosque.
+      if (jt) {
+        const jat = jt[p.key];
+        const at = new Date(jat.getTime() - mosque.remind * 60000);
+        if (at.getTime() > now + 30 * 1000) {
+          const name = p.key === 'dhuhr' && jt.isJumuah ? t('jamaat.jumuah') : t('prayer.' + p.key);
+          await add({
+            content: {
+              title: t('jamaat.remindTitle', { name, time: fmtTime(jat) }),
+              body: t('jamaat.remindBody', { mosque: mosque.name, n: mosque.remind }),
+              data: { open: 'set:salah', prayer: p.key, day: dateKey(jat) },
+              sound: 'default',
+              categoryIdentifier: 'prayer',
+            },
+            trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL },
+          }, at);
+        }
+      }
       const start = times[p.key];
       const name = t('prayer.' + p.key);
       if (alertOn && start.getTime() > now + 30 * 1000) {

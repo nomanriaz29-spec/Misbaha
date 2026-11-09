@@ -31,6 +31,7 @@ import Qibla from './src/screens/Qibla';
 import Duas from './src/screens/Duas';
 import History from './src/screens/History';
 import Quran from './src/screens/Quran';
+import Mosque from './src/screens/Mosque';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -266,6 +267,7 @@ export default function App() {
       <History visible={sheet === 'history'} onClose={() => setSheet(null)} history={history} salah={salah} onToggleSalah={toggleSalah} settings={settings} theme={theme} />
       <Duas visible={sheet === 'duas'} onClose={() => setSheet(null)} onChoose={choose} theme={theme} />
       <Qibla visible={sheet === 'qibla'} onClose={() => setSheet(null)} settings={settings} theme={theme} />
+      <Mosque visible={sheet === 'mosque'} onClose={() => setSheet('sched')} settings={settings} update={update} theme={theme} />
       <Quran visible={sheet === 'quran'} onClose={() => setSheet(null)} openSurah={quranSurah} theme={theme} />
       <Library
         visible={sheet === 'lib'}
@@ -294,6 +296,7 @@ export default function App() {
         notifOn={notifOn}
         onEnableNotifs={async () => { const g = await requestNotificationPermission(); setNotifOn(g); if (g) rescheduleAll(settings); }}
         onLanguage={changeLanguage}
+        onOpenMosque={() => setSheet('mosque')}
         salah={salah}
         onToggleSalah={toggleSalah}
         theme={theme}
