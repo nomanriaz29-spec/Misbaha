@@ -5,6 +5,7 @@ import SwiftUI
 struct RatbWidgets: WidgetBundle {
   var body: some Widget {
     PrayerTimesWidget()
+    TodayPrayersWidget()
     VerseOfTheDayWidget()
   }
 }

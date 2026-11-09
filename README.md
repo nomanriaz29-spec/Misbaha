@@ -19,7 +19,10 @@ One codebase for **Android and iOS**, built with Expo (SDK 58, React Native 0.88
 - **Qibla finder** (compass button in the top bar). The live compass turns with the phone using its heading sensor. It shows the bearing and distance to the Kaaba, turns green and vibrates when you face the Qibla, and prompts you to calibrate when the reading is unreliable.
 - **Daily history** (tap "Today · History" in the top left). It shows your current and best streak, the last 7 days and all-time totals, plus a month calendar shaded by how much you did each day. Tap any day to see which routines you completed (After Salah 0–5, morning, evening, before sleep) and a count for every dhikr and dua. Two years of history are kept on the phone.
 - **Accurate prayer times that follow you.** Times are calculated on the phone with the [adhan](https://github.com/batoulapps/adhan-js) library. When the app opens, it checks (without asking again) whether you've moved more than 15 km and updates the place and the country's method. **Fine-tune times** in Prayers lets you shift any prayer by ±30 minutes to match your masjid exactly.
-- **iOS widget** ([preview](docs/widget-preview.png)) for the home screen (small and medium) and the lock screen (inline, rectangular and circular). It shows the next prayer, a live countdown and today's five times. The app saves 30 days of times for it, so it keeps working even if the app isn't opened for weeks.
+- **Home-screen widgets on Android and iPhone.** Prayers → Home screen widgets lists them; on Android the **Add** button puts one on the home screen in one tap.
+  - Android: **Prayer times** (4×2, next prayer + today's five times), **Today's prayers** (2×2, all five times), **Next prayer** (2×1), **Verse of the day** (4×2). All resize, follow light/dark mode and the app language, and open the app when tapped. Android refreshes them every 30 minutes and whenever the app opens, so the highlighted "next" prayer can trail the real time by up to 30 minutes; the times themselves are always right.
+  - iPhone: **Prayer times**, **Today's prayers** (small square with all five times, or the next three on the lock screen) and **Verse of the day**.
+- **iOS prayer widget** ([preview](docs/widget-preview.png)) for the home screen (small and medium) and the lock screen (inline, rectangular and circular). It shows the next prayer, a live countdown and today's five times. The app saves 30 days of times for it, so it keeps working even if the app isn't opened for weeks.
 - **Verse of the day widget** (iOS: small, medium, large and lock screen). Each day at midnight it shows a new verse in Arabic with its meaning in the app's language (English or Urdu; Arabic shows the verse alone). Verses come from a hand-picked list of 142 that stand on their own (duas, mercy, patience, gratitude); the list runs through fully before any verse repeats, and everyone sees the same verse on the same day. Tapping it opens that verse in the Quran reader. The app saves 30 days ahead, so it keeps changing even if the app isn't opened. Add verses in `src/lib/verseOfDay.js`.
 - **Your own dhikr** (Adhkar → Your dhikr → Add). Name, optional Arabic and meaning, and a target of 33, 100, 1000, none or any number. They count, show in history and can be edited or deleted; up to 50.
 - **Quran reader** (Quran button). All 114 surahs in the Tanzil Simple Arabic text, with English (Pickthall) or Urdu (Jalandhry) translation that can be hidden, adjustable text size, search by name or number, "continue reading", and bookmarks (long-press a verse). On Fridays a Surah al-Kahf card appears at the top. Works fully offline.
@@ -57,6 +60,9 @@ src/lib/custom.js          your own dhikr
 src/data/quran/            Quran text and translations (Tanzil)
 src/screens/               Onboarding, Counter, Library, CustomEditor, Duas, Quran, History, Schedule, Qibla
 src/components/            Sheet, PocketMode
+src/widgets/model.js       what every widget shows (shared by Android and tests)
+src/widgets/android/       Android home-screen widgets (react-native-android-widget)
+assets/widget-preview/     pictures shown in Android's widget picker
 assets/                    icon, adaptive icon, splash, notification icon
 ```
 

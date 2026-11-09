@@ -190,6 +190,22 @@ struct WidgetSnapshot {
     if let e = first("longUr") { save(vhome(e, .systemMedium, medium), medium, "20-verse-medium-longest-urdu") }
     save(vhome(noneV[0], .systemMedium, medium), medium, "21-verse-no-data")
     save(vhome(VerseEntry(date: Date(), verse: sampleVerse), .systemSmall, small), small, "22-verse-gallery")
+
+    // --- Today's prayers (small, all five times) ------------------------------
+    check(now.day.count == 5, "today's prayers: the small widget lists all five times")
+    func today(_ e: PrayerEntry, _ f: WidgetFamily, _ size: CGSize, lockStyle: Bool = false) -> some View {
+      TodayPrayersView(entry: e, familyOverride: f)
+        .padding(lockStyle ? 0 : 14)
+        .foregroundStyle(.white)
+        .frame(width: size.width, height: size.height)
+        .background(lockStyle ? Color(white: 0.22) : homeBg)
+        .clipShape(RoundedRectangle(cornerRadius: lockStyle ? 12 : 22, style: .continuous))
+    }
+    save(today(now, .systemSmall, small), small, "23-today-small")
+    save(today(night, .systemSmall, small), small, "24-today-small-after-isha")
+    save(today(now, .accessoryRectangular, CGSize(width: 172, height: 76), lockStyle: true), CGSize(width: 172, height: 76), "25-today-lock")
+    if let e = arNow { save(today(e, .systemSmall, small), small, "26-today-small-arabic") }
+    save(today(empty, .systemSmall, small), small, "27-today-no-data")
     _ = fmt
     return failed
   }

@@ -80,7 +80,70 @@
       "expo-background-task",
       "expo-font",
       "@bacons/apple-targets",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "RatbPrayerTimes",
+              "label": "Prayer times",
+              "description": "The next prayer and today’s five times",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "500dp",
+              "maxResizeHeight": "300dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-preview/prayer-times.png"
+            },
+            {
+              "name": "RatbTodayPrayers",
+              "label": "Today’s prayers",
+              "description": "All five prayer times in a small square",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "250dp",
+              "maxResizeHeight": "250dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-preview/today-prayers.png"
+            },
+            {
+              "name": "RatbNextPrayer",
+              "label": "Next prayer",
+              "description": "The next prayer and its time",
+              "minWidth": "110dp",
+              "minHeight": "50dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 1,
+              "maxResizeWidth": "300dp",
+              "maxResizeHeight": "120dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-preview/next-prayer.png"
+            },
+            {
+              "name": "RatbVerse",
+              "label": "Verse of the day",
+              "description": "A verse of the Quran with its meaning, new every day",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "500dp",
+              "maxResizeHeight": "400dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-preview/verse.png"
+            }
+          ]
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { getTimes, PRAYER_KEYS } from './prayer';
 import { t, getLang } from '../i18n';
 import { verseFor } from './verseOfDay';
+import { refreshAndroidWidgets } from '../widgets/android';
 
 // Shared with the iOS widget extension through this App Group (see app.json and targets/prayer-widget).
 export const APP_GROUP = 'group.com.nomanriaz.misbaha';
@@ -22,6 +23,7 @@ if (Platform.OS === 'ios') {
 // Shape: { place, updated, days: [{ d: 'YYYY-MM-DD', t: [fajr, dhuhr, asr, maghrib, isha] (unix seconds) }],
 //          labels: { names: [5 prayer names], next, inPrefix, open, rtl } }  (labels follow the app's language)
 export function updateWidget(settings) {
+  if (Platform.OS === 'android') { refreshAndroidWidgets(settings); return; }
   updateVerseWidget();
   if (!ExtensionStorage || !settings?.location) return;
   try {

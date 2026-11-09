@@ -9,6 +9,7 @@ import { ALERT_SOUNDS } from '../lib/notifications';
 import { playSound, stopSound } from '../lib/sounds';
 import { toHijri, formatHijri } from '../lib/hijri';
 import { t, getLang, LANGS } from '../i18n';
+import { pinAndroidWidget, androidWidgetsAvailable } from '../widgets/android';
 
 const OFFSETS = [5, 10, 15, 20, 30];
 export const prayerName = (key) => t('prayer.' + key);
@@ -38,6 +39,7 @@ export function buildPlan(settings, now = new Date()) {
 export default function Schedule({ visible, onClose, onStart, settings, update, notifOn, onEnableNotifs, onLanguage, theme }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [widgetMsg, setWidgetMsg] = useState('');
   const [picker, setPicker] = useState(null); // 'method' | 'city' | 'lang' | null
   const [preview, setPreview] = useState(null); // sound being previewed
   useEffect(() => { if (!visible) { stopSound(); setPreview(null); } }, [visible]);
@@ -285,6 +287,22 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
           <T>{t('reminders.vibrate')}</T>
           <Toggle value={settings.haptics} onChange={(v) => update({ haptics: v })} />
         </Row>
+      </Group>
+
+      <Group label={t('widgets.title')} theme={theme}>
+        {(Platform.OS === 'android'
+          ? [['RatbPrayerTimes', 'widgets.prayerTimes', 'widgets.prayerTimesSub'], ['RatbTodayPrayers', 'widgets.today', 'widgets.todaySub'],
+             ['RatbNextPrayer', 'widgets.next', 'widgets.nextSub'], ['RatbVerse', 'widgets.verse', 'widgets.verseSub']]
+          : [[null, 'widgets.prayerTimes', 'widgets.prayerTimesSubIos'], [null, 'widgets.today', 'widgets.todaySub'], [null, 'widgets.verse', 'widgets.verseSubIos']]
+        ).map(([name, title, sub], i) => (
+          <Row key={title} first={i === 0}>
+            <View style={{ flex: 1 }}><T>{t(title)}</T><T style={{ color: theme.muted, fontSize: 14 }}>{t(sub)}</T></View>
+            {name && androidWidgetsAvailable() ? (
+              <Btn label={t('widgets.add')} onPress={async () => setWidgetMsg((await pinAndroidWidget(name)) ? '' : t('widgets.manualAndroid'))} />
+            ) : null}
+          </Row>
+        ))}
+        <Row><T style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>{widgetMsg || (Platform.OS === 'android' ? t('widgets.howAndroid') : t('widgets.howIos'))}</T></Row>
       </Group>
 
       <Group label={t('lang.title')} theme={theme}>

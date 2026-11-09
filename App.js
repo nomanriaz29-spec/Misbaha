@@ -151,8 +151,9 @@ export default function App() {
     }
   }, [response, progress, setProgress]);
 
-  // Links from the verse-of-the-day widget: misbaha://quran/<surah>/<verse>
+  // Links from the widgets: misbaha://quran/<surah>/<verse> and misbaha://prayers
   const handleUrl = useCallback((url) => {
+    if (typeof url === 'string' && /^misbaha:\/\/prayers\b/.test(url)) { setSheet('sched'); return; }
     const m = typeof url === 'string' && /^misbaha:\/\/quran\/(\d{1,3})(?:\/(\d{1,3}))?/.exec(url);
     if (!m) return;
     const s = +m[1], a = +(m[2] || 1);

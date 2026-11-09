@@ -296,3 +296,97 @@ struct PrayerTimesWidget: Widget {
     .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline, .accessoryCircular])
   }
 }
+
+// MARK: - Today's prayers (all five times in a small square)
+
+struct TodayPrayersView: View {
+  @Environment(\.widgetFamily) private var envFamily
+  let entry: PrayerEntry
+  var familyOverride: WidgetFamily? = nil // used by the snapshot test
+  private var family: WidgetFamily { familyOverride ?? envFamily }
+
+  var body: some View {
+    content
+      .environment(\.layoutDirection, entry.labels.rtl ? .rightToLeft : .leftToRight)
+      .environment(\.locale, entry.labels.lang.isEmpty ? Locale.current : Locale(identifier: entry.labels.lang))
+      .containerBackground(for: .widget) {
+        if family == .systemSmall { bg } else { Color.clear }
+      }
+  }
+
+  // The next prayer and the ones after it today (or tomorrow's list after Isha).
+  private var upcoming: [Prayer] {
+    guard let next = entry.next, let i = entry.day.firstIndex(of: next) else { return Array(entry.day.prefix(3)) }
+    return Array(entry.day[i...].prefix(3))
+  }
+
+  @ViewBuilder private var content: some View {
+    if let next = entry.next {
+      if family == .accessoryRectangular {
+        VStack(alignment: .leading, spacing: 1) {
+          ForEach(upcoming, id: \.self) { p in
+            HStack {
+              Text(p.name).font(.system(size: 13, weight: p == next ? .bold : .regular))
+              Spacer(minLength: 4)
+              Text(p.date, style: .time).font(.system(size: 13, weight: p == next ? .bold : .regular)).monospacedDigit()
+            }
+            .widgetAccentable(p == next)
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+      } else {
+        VStack(alignment: .leading, spacing: 4) {
+          Text(entry.place)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(muted)
+            .lineLimit(1)
+          VStack(spacing: 3) {
+            ForEach(entry.day, id: \.self) { p in
+              let isNext = p == next
+              HStack(spacing: 4) {
+                Text(p.name)
+                  .font(.system(size: 14, weight: isNext ? .semibold : .regular))
+                  .lineLimit(1)
+                  .minimumScaleFactor(0.7)
+                Spacer(minLength: 2)
+                Text(p.date, style: .time)
+                  .font(.system(size: 14, weight: isNext ? .semibold : .regular))
+                  .monospacedDigit()
+                  .lineLimit(1)
+                  .minimumScaleFactor(0.7)
+              }
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .background(isNext ? brass.opacity(0.16) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+              .foregroundStyle(isNext ? brass : (p.date < entry.date ? muted : fg))
+            }
+          }
+          .frame(maxHeight: .infinity)
+        }
+      }
+    } else {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Ratb")
+          .font(.system(size: 15, weight: .semibold, design: .serif))
+          .foregroundStyle(family == .systemSmall ? fg : Color.primary)
+        Text(entry.labels.open)
+          .font(.system(size: 12))
+          .foregroundStyle(family == .systemSmall ? muted : Color.secondary)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+  }
+}
+
+struct TodayPrayersWidget: Widget {
+  let kind = "TodayPrayers"
+
+  var body: some WidgetConfiguration {
+    StaticConfiguration(kind: kind, provider: Provider()) { entry in
+      TodayPrayersView(entry: entry)
+    }
+    .configurationDisplayName("Today's prayers")
+    .description("All five prayer times, the next one highlighted.")
+    .supportedFamilies([.systemSmall, .accessoryRectangular])
+  }
+}
