@@ -20,6 +20,12 @@ One codebase for **Android and iOS**, built with Expo (SDK 58, React Native 0.88
 - **Daily history** (tap "Today · History" in the top left). It shows your current and best streak, the last 7 days and all-time totals, plus a month calendar shaded by how much you did each day. Tap any day to see which routines you completed (After Salah 0–5, morning, evening, before sleep) and a count for every dhikr and dua. Two years of history are kept on the phone.
 - **Accurate prayer times that follow you.** Times are calculated on the phone with the [adhan](https://github.com/batoulapps/adhan-js) library. When the app opens, it checks (without asking again) whether you've moved more than 15 km and updates the place and the country's method. **Fine-tune times** in Prayers lets you shift any prayer by ±30 minutes to match your masjid exactly.
 - **iOS widget** ([preview](docs/widget-preview.png)) for the home screen (small and medium) and the lock screen (inline, rectangular and circular). It shows the next prayer, a live countdown and today's five times. The app saves 30 days of times for it, so it keeps working even if the app isn't opened for weeks.
+- **Your own dhikr** (Adhkar → Your dhikr → Add). Name, optional Arabic and meaning, and a target of 33, 100, 1000, none or any number. They count, show in history and can be edited or deleted; up to 50.
+- **Quran reader** (Quran button). All 114 surahs in the Tanzil Simple Arabic text, with English (Pickthall) or Urdu (Jalandhry) translation that can be hidden, adjustable text size, search by name or number, "continue reading", and bookmarks (long-press a verse). On Fridays a Surah al-Kahf card appears at the top. Works fully offline.
+- **Islamic calendar.** The Hijri date sits under the counter (Umm al-Qura, adjustable ±2 days for local moon sighting). Optional reminders: **Friday** Surah al-Kahf and salawat at 10:00 (tapping opens al-Kahf), **white days** the evening before the 13th of each Hijri month, and **Ramadan mode**, which shows the iftar or suhoor countdown on the counter and sends a suhoor reminder 30 minutes before Fajr.
+- **Pocket mode** for counting without looking: a black full-screen counter where any tap counts, with a tap vibration on each count, a long double buzz every 33 and a success buzz at the target. Press and hold to leave. (Counting with the volume buttons isn't allowed on iPhone by App Store rule 2.5.9, so this is the alternative.)
+- **English, Arabic and Urdu** (Prayers → Language, or follow the phone). Arabic and Urdu switch the whole layout to right-to-left, and the app restarts once to apply it. Notifications, routines, duas and the widget follow the chosen language.
+- **Apple Watch app** (in `watch/`, off until enabled; see below). Tap or turn the Digital Crown to count, with haptics; the routines step through on their own.
 - Light and dark mode follow the phone.
 
 ## Project layout
@@ -41,7 +47,15 @@ src/lib/storage.js         settings/progress storage with validation
 src/lib/qibla.js           Qibla bearing and distance
 src/lib/widget.js          writes prayer times for the iOS widget
 targets/prayer-widget/     the iOS widget (SwiftUI / WidgetKit)
-src/screens/               Onboarding, Counter, Library, Duas, History, Schedule, Qibla
+watch/                     the Apple Watch app (SwiftUI), not built until moved to targets/watch
+ci/WidgetSnapshot.swift    widget tests run on an iOS simulator by GitHub Actions
+src/i18n/                  English, Arabic and Urdu text (en.js, ar.js, ur.js, content.js)
+src/lib/hijri.js           Hijri date (Umm al-Qura table)
+src/lib/quran.js           Quran data loading, bookmarks
+src/lib/custom.js          your own dhikr
+src/data/quran/            Quran text and translations (Tanzil)
+src/screens/               Onboarding, Counter, Library, CustomEditor, Duas, Quran, History, Schedule, Qibla
+src/components/            Sheet, PocketMode
 assets/                    icon, adaptive icon, splash, notification icon
 ```
 
@@ -125,6 +139,21 @@ You don't need a Mac. EAS builds iOS in the cloud.
 6. Open Ratb once so it saves the prayer times. Then long-press the home screen → **+** → search **Ratb** → add the widget. For the lock screen: long-press the lock screen → Customize → Lock Screen → add widget.
 
 To test with friends instead, build with `npm run build:ios` and send it to **TestFlight** with `npm run submit:ios`.
+
+## Apple Watch
+
+The watch app's code is in `watch/`. Every push compiles it for watchOS 10 on GitHub (see the Actions tab), but it is not part of the iPhone build yet, so a watch problem can't block an iPhone release. To turn it on:
+
+1. Make sure one iPhone build with the widget has gone through TestFlight.
+2. Run `git mv watch targets/watch`, commit, and push.
+3. Run `npx expo prebuild --clean` if you build locally, then `eas build -p ios --profile production`. EAS asks to create the watch app's bundle ID (`com.nomanriaz.misbaha.watchkitapp`); say yes.
+4. In App Store Connect, add watch screenshots (any Apple Watch size) before submitting.
+
+The watch app counts on its own (counts reset each day). It does not sync with the phone yet.
+
+## Widget tests
+
+`.github/workflows/ios-check.yml` runs on every push to `main`. It compiles the widget and the watch app with Xcode, then runs `ci/WidgetSnapshot.swift` on an iPhone simulator: it checks the data the app writes, the next-prayer logic (including after Isha and when the saved days run out), Arabic labels, and renders every widget size. The pictures land on the `ci-widget-snapshots` branch.
 
 ## Security
 

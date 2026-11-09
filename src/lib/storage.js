@@ -17,6 +17,11 @@ export const DEFAULT_SETTINGS = {
   methodAuto: true, // follow the country's method until the user picks one
   adjust: { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 }, // minutes
   alert: { on: true, sound: 'azan' }, // alert at each prayer time: 'azan' | 'alarm' | 'standard'
+  lang: 'system', // 'system' | 'en' | 'ar' | 'ur'
+  hijriAdjust: 0, // -2..2 days, to follow local moon sighting
+  friday: true, // Friday reminder: Surah al-Kahf and salawat
+  whiteDays: true, // reminder before the 13th-15th of each Hijri month
+  ramadan: true, // suhoor reminders and iftar countdown in Ramadan
 };
 const OFFSETS = [5, 10, 15, 20, 30];
 
@@ -67,6 +72,11 @@ function cleanSettings(s) {
       on: s.alert?.on !== false,
       sound: ['azan', 'alarm', 'standard'].includes(s.alert?.sound) ? s.alert.sound : 'azan',
     },
+    lang: ['system', 'en', 'ar', 'ur'].includes(s.lang) ? s.lang : 'system',
+    hijriAdjust: Number.isInteger(s.hijriAdjust) ? Math.max(-2, Math.min(2, s.hijriAdjust)) : 0,
+    friday: s.friday !== false,
+    whiteDays: s.whiteDays !== false,
+    ramadan: s.ramadan !== false,
   };
 }
 

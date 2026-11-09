@@ -34,6 +34,7 @@ struct WidgetLabels {
   var inPrefix = "in"
   var open = "Open the app to load prayer times."
   var rtl = false
+  var lang = "" // "ar", "ur" or "en": times and the countdown follow the app language
 }
 
 private struct Payload: Decodable {
@@ -47,6 +48,7 @@ private struct Payload: Decodable {
     let inPrefix: String?
     let open: String?
     let rtl: Bool?
+    let lang: String?
   }
   let place: String
   let days: [Day]
@@ -74,6 +76,7 @@ func loadPrayers(defaults: UserDefaults? = UserDefaults(suiteName: appGroup)) ->
     if let v = l.inPrefix { labels.inPrefix = v }
     if let v = l.open, !v.isEmpty { labels.open = v }
     labels.rtl = l.rtl ?? false
+    if let v = l.lang, ["en", "ar", "ur"].contains(v) { labels.lang = v }
   }
 
   var list: [Prayer] = []
@@ -211,6 +214,7 @@ struct PrayerWidgetView: View {
   var body: some View {
     content
       .environment(\.layoutDirection, entry.labels.rtl ? .rightToLeft : .leftToRight)
+      .environment(\.locale, entry.labels.lang.isEmpty ? Locale.current : Locale(identifier: entry.labels.lang))
       .containerBackground(for: .widget) { background }
   }
 

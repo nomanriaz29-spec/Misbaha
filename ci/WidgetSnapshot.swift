@@ -41,7 +41,7 @@ struct WidgetSnapshot {
     let payload: [String: Any] = ["place": "Dubai", "updated": Date().timeIntervalSince1970, "days": days]
     // Same days with Arabic labels, as the app writes when its language is Arabic.
     let arPayload: [String: Any] = ["place": "دبي", "updated": Date().timeIntervalSince1970, "days": days,
-      "labels": ["names": ["الفجر", "الظهر", "العصر", "المغرب", "العشاء"], "next": "الصلاة القادمة", "inPrefix": "بعد", "open": "افتح التطبيق", "rtl": true]]
+      "labels": ["names": ["الفجر", "الظهر", "العصر", "المغرب", "العشاء"], "next": "الصلاة القادمة", "inPrefix": "بعد", "open": "افتح التطبيق", "rtl": true, "lang": "ar"]]
     let json = String(data: try! JSONSerialization.data(withJSONObject: payload), encoding: .utf8)!
     let suite = UserDefaults(suiteName: "ratb.widget.snapshot")!
     suite.set(json, forKey: "prayers")
@@ -59,7 +59,7 @@ struct WidgetSnapshot {
 
     suite.set(String(data: try! JSONSerialization.data(withJSONObject: arPayload), encoding: .utf8)!, forKey: "prayers")
     let arData = loadPrayers(defaults: suite)
-    check(arData?.prayers.first?.name == "الفجر" && arData?.labels.rtl == true && arData?.labels.next == "الصلاة القادمة", "reads Arabic prayer names and labels")
+    check(arData?.prayers.first?.name == "الفجر" && arData?.labels.rtl == true && arData?.labels.next == "الصلاة القادمة" && arData?.labels.lang == "ar", "reads Arabic prayer names and labels")
     suite.removeObject(forKey: "prayers")
 
     // --- Timeline ------------------------------------------------------------

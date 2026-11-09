@@ -7,37 +7,42 @@ import { DAILY } from '../data/adhkar';
 import { FONTS } from '../theme';
 import { ALERT_SOUNDS } from '../lib/notifications';
 import { playSound, stopSound } from '../lib/sounds';
+import { toHijri, formatHijri } from '../lib/hijri';
+import { t, getLang, LANGS } from '../i18n';
 
 const OFFSETS = [5, 10, 15, 20, 30];
+export const prayerName = (key) => t('prayer.' + key);
+export const soundLabel = (k) => t('sound.' + k);
 
 export function buildPlan(settings, now = new Date()) {
-  const t = getTimes(settings.location, settings, now);
-  if (!t) return [];
+  const tm = getTimes(settings.location, settings, now);
+  if (!tm) return [];
   const off = (settings.offset ?? 15) * 60000;
   const enabled = PRAYERS.filter((p) => settings.prayers[p.key]);
   const items = enabled.map((p) => ({
-    at: new Date(t[p.key].getTime() + off), name: 'After ' + p.name, sub: p.body, open: p.open,
+    at: new Date(tm[p.key].getTime() + off), name: t('plan.after', { name: prayerName(p.key) }), sub: t('plan.afterSub.' + p.key), open: p.open,
   }));
   if (settings.alert?.on !== false) {
-    const label = ALERT_SOUNDS[settings.alert?.sound]?.label || 'Azan';
-    enabled.forEach((p) => items.push({ at: t[p.key], name: `${p.name} prayer`, sub: `Prayer time alert · ${label}`, open: 'set:salah' }));
+    const label = soundLabel(settings.alert?.sound || 'azan');
+    enabled.forEach((p) => items.push({ at: tm[p.key], name: t('plan.prayer', { name: prayerName(p.key) }), sub: t('plan.alertSub', { sound: label }), open: 'set:salah' }));
   }
   if (settings.daily) {
     DAILY.forEach((r) => {
       const at = new Date(now); at.setHours(r.hour, r.minute, 0, 0);
-      items.push({ at, name: r.title, sub: r.body, open: r.open });
+      items.push({ at, name: t('daily.' + r.id + '.title'), sub: t('daily.' + r.id + '.body'), open: r.open });
     });
   }
   return items.sort((a, b) => a.at - b.at);
 }
 
-export default function Schedule({ visible, onClose, onStart, settings, update, notifOn, onEnableNotifs, theme }) {
+export default function Schedule({ visible, onClose, onStart, settings, update, notifOn, onEnableNotifs, onLanguage, theme }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
-  const [picker, setPicker] = useState(null); // 'method' | 'city' | null
+  const [picker, setPicker] = useState(null); // 'method' | 'city' | 'lang' | null
   const [preview, setPreview] = useState(null); // sound being previewed
   useEffect(() => { if (!visible) { stopSound(); setPreview(null); } }, [visible]);
   const alert = settings.alert || { on: true, sound: 'azan' };
+  const lang = getLang();
   const togglePreview = async (kind) => {
     if (preview === kind) { stopSound(); setPreview(null); return; }
     const ok = await playSound(kind, () => setPreview(null));
@@ -45,21 +50,18 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
   };
 
   const times = useMemo(() => getTimes(settings.location, settings), [settings, visible]);
-  const plan = useMemo(() => buildPlan(settings), [settings, visible]);
+  const plan = useMemo(() => buildPlan(settings), [settings, visible, lang]);
   const now = Date.now();
   const next = plan.find((x) => x.at.getTime() > now);
+  const hijriToday = formatHijri(toHijri(new Date(), settings.hijriAdjust || 0), lang);
 
   const useGps = async () => {
     setBusy(true); setMsg('');
     try {
       const loc = await detectLocation();
-      if (loc.denied) {
-        setMsg('Location is off for Ratb. Turn it on in Settings, or choose a city.');
-      } else {
-        update({ location: loc, ...defaultsForCountry(loc.country), methodAuto: true });
-        setMsg('Updated to ' + loc.name);
-      }
-    } catch (e) { setMsg(e.message); }
+      if (loc.denied) setMsg(t('location.off'));
+      else { update({ location: loc, ...defaultsForCountry(loc.country), methodAuto: true }); setMsg(t('location.updated', { name: loc.name })); }
+    } catch (e) { setMsg(t('location.error')); }
     setBusy(false);
   };
 
@@ -70,86 +72,95 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
   const Btn = ({ label, onPress }) => (
     <Pressable onPress={onPress} style={[styles.btn, { borderColor: theme.line }]}><T style={{ fontSize: 15 }}>{label}</T></Pressable>
   );
+  const Toggle = ({ value, onChange }) => (
+    <Switch value={value} onValueChange={onChange} trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+  );
+  const Stepper = ({ value, onChange, min, max, format, label }) => (
+    <View style={styles.stepper}>
+      <Pressable onPress={() => onChange(Math.max(min, value - 1))} hitSlop={6} accessibilityLabel={label + ' −'} style={[styles.stepBtn, { borderColor: theme.line }]}>
+        <T style={{ fontSize: 20.5 }}>−</T>
+      </Pressable>
+      <T style={{ minWidth: 70, textAlign: 'center', fontVariant: ['tabular-nums'], color: value ? theme.brass : theme.muted }}>{format(value)}</T>
+      <Pressable onPress={() => onChange(Math.min(max, value + 1))} hitSlop={6} accessibilityLabel={label + ' +'} style={[styles.stepBtn, { borderColor: theme.line }]}>
+        <T style={{ fontSize: 20.5 }}>+</T>
+      </Pressable>
+    </View>
+  );
+  const minutes = (v) => (v === 0 ? t('unit.min', { n: 0 }) : `${v > 0 ? '+' : ''}${t('unit.min', { n: v })}`);
+  const days = (v) => (v === 0 ? '0' : `${v > 0 ? '+' : ''}${t('unit.day', { n: v })}`);
 
   return (
-    <Sheet visible={visible} title="Prayer & reminders" onClose={() => { setPicker(null); onClose(); }} theme={theme}>
+    <Sheet visible={visible} title={t('prayers.sheetTitle')} onClose={() => { setPicker(null); onClose(); }} theme={theme}>
       <View style={{ gap: 8 }}>
-        <Text style={[styles.lbl, { color: theme.muted }]}>{('Prayer times · ' + (settings.location?.name || '')).toUpperCase()}</Text>
+        <Text style={[styles.lbl, { color: theme.muted }]}>{t('prayers.timesIn', { place: settings.location?.name || '' })}</Text>
         <View style={[styles.grid, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-          {[['Fajr', 'fajr'], ['Sunrise', 'sunrise'], ['Dhuhr', 'dhuhr'], ['Asr', 'asr'], ['Maghrib', 'maghrib'], ['Isha', 'isha']].map(([n, k]) => (
+          {['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'].map((k) => (
             <View key={k} style={styles.cell}>
-              <Text style={{ color: theme.muted, fontSize: 12.5, fontFamily: FONTS.ui }}>{n}</Text>
+              <Text style={{ color: theme.muted, fontSize: 12.5, fontFamily: FONTS.ui }} numberOfLines={1}>{prayerName(k)}</Text>
               <Text style={{ color: theme.fg, fontSize: 16, fontFamily: FONTS.numMed, fontVariant: ['tabular-nums'] }}>
                 {times ? fmtTime(times[k]).replace(/ (AM|PM)/, '') : '--'}
               </Text>
             </View>
           ))}
         </View>
+        <Text style={{ color: theme.muted, fontSize: 14, fontFamily: FONTS.ui, textAlign: 'center' }}>{hijriToday}</Text>
       </View>
 
       {!notifOn && (
         <Group theme={theme}>
           <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-            <T style={{ fontFamily: FONTS.uiBold }}>Notifications are off</T>
-            <T style={{ color: theme.muted, fontSize: 15 }}>Turn them on to get a reminder on your phone after each prayer.</T>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Btn label="Turn on" onPress={onEnableNotifs} />
-              <Btn label="Open phone settings" onPress={() => Linking.openSettings()} />
+            <T style={{ fontFamily: FONTS.uiBold }}>{t('notif.offTitle')}</T>
+            <T style={{ color: theme.muted, fontSize: 15 }}>{t('notif.offBody')}</T>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              <Btn label={t('notif.turnOn')} onPress={onEnableNotifs} />
+              <Btn label={t('common.openSettings')} onPress={() => Linking.openSettings()} />
             </View>
           </Row>
         </Group>
       )}
 
-      <Group label="Prayer time alert" theme={theme}>
+      <Group label={t('alert.title')} theme={theme}>
         <Row first>
           <View style={{ flex: 1 }}>
-            <T>Alert at each prayer time</T>
-            <T style={{ color: theme.muted, fontSize: 14 }}>Plays when the prayer begins</T>
+            <T>{t('alert.toggle')}</T>
+            <T style={{ color: theme.muted, fontSize: 14 }}>{t('alert.toggleSub')}</T>
           </View>
-          <Switch value={alert.on} onValueChange={(v) => update({ alert: { ...alert, on: v } })}
-            trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+          <Toggle value={alert.on} onChange={(v) => update({ alert: { ...alert, on: v } })} />
         </Row>
         {alert.on && (
           <Row style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-            <T>Sound</T>
+            <T>{t('alert.sound')}</T>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              {Object.entries(ALERT_SOUNDS).map(([k, s]) => {
+              {Object.keys(ALERT_SOUNDS).map((k) => {
                 const on = alert.sound === k;
                 return (
                   <Pressable key={k} onPress={() => update({ alert: { ...alert, sound: k } })} accessibilityRole="radio" accessibilityState={{ checked: on }}
                     style={[styles.soundOpt, { borderColor: on ? theme.brass : theme.line }, on && { backgroundColor: theme.brassSoft }]}>
-                    <T style={{ fontFamily: on ? FONTS.uiBold : FONTS.ui }}>{s.label}{k === 'azan' ? ' ★' : ''}</T>
+                    <T style={{ fontFamily: on ? FONTS.uiBold : FONTS.ui }}>{soundLabel(k)}{k === 'azan' ? ' ★' : ''}</T>
                   </Pressable>
                 );
               })}
             </View>
             {alert.sound !== 'standard' && (
               <Pressable onPress={() => togglePreview(alert.sound === 'azan' ? 'azan' : 'alarm')} style={[styles.btn, { borderColor: theme.line, alignSelf: 'flex-start' }]}>
-                <T style={{ fontSize: 15 }}>{preview ? '■  Stop' : `▶  Play ${ALERT_SOUNDS[alert.sound].label.toLowerCase()}`}</T>
+                <T style={{ fontSize: 15 }}>{preview ? '■  ' + t('alert.stop') : '▶  ' + t('alert.play', { sound: soundLabel(alert.sound) })}</T>
               </Pressable>
             )}
             <T style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
-              {alert.sound === 'azan'
-                ? 'The notification plays the opening of the azan. Tap it to hear the full azan in the app.'
-                : alert.sound === 'alarm' ? 'A short alarm tone plays when the prayer begins.' : 'Your phone’s standard notification sound.'}
-              {Platform.OS === 'ios' ? ' On iPhone, sounds play only when the ring switch is on.' : ''}
+              {t('alert.note.' + alert.sound)}{Platform.OS === 'ios' ? ' ' + t('alert.iosSwitch') : ''}
             </T>
-            {alert.sound === 'azan' && (
-              <T style={{ color: theme.muted, fontSize: 12.5 }}>Azan recorded at the Prophet’s Mosque, Madinah, by ejaz215 (CC BY 3.0).</T>
-            )}
+            {alert.sound === 'azan' && <T style={{ color: theme.muted, fontSize: 12.5 }}>{t('alert.credit')}</T>}
           </Row>
         )}
         {alert.on && Platform.OS === 'android' && (
           <Row style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
-            <T style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
-              For the alert to play exactly on time, allow “Alarms & reminders” for Ratb in your phone’s settings.
-            </T>
-            <Btn label="Open phone settings" onPress={() => Linking.openSettings()} />
+            <T style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>{t('alert.exact')}</T>
+            <Btn label={t('common.openSettings')} onPress={() => Linking.openSettings()} />
           </Row>
         )}
       </Group>
 
-      <Group label="Today's reminders" theme={theme}>
+      <Group label={t('plan.title')} theme={theme}>
         {plan.map((x, i) => {
           const past = x.at.getTime() <= now;
           return (
@@ -159,37 +170,60 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
                 <T style={{ fontFamily: FONTS.uiBold, color: past ? theme.muted : theme.fg }}>{x.name}</T>
                 <T style={{ color: theme.muted, fontSize: 14 }} numberOfLines={2}>{x.sub}</T>
               </View>
-              <Btn label="Start" onPress={() => onStart(x.open)} />
+              <Btn label={t('plan.start')} onPress={() => onStart(x.open)} />
             </Row>
           );
         })}
       </Group>
 
-      <Group label="Location" theme={theme}>
+      <Group label={t('calendar.title')} theme={theme}>
         <Row first>
           <View style={{ flex: 1 }}>
-            <T style={{ fontFamily: FONTS.uiBold }}>{settings.location?.name || 'Not set'}</T>
-            <T style={{ color: theme.muted, fontSize: 14 }}>{settings.location?.source === 'gps' ? 'From your phone’s location' : 'Chosen manually'}</T>
+            <T>{t('calendar.adjust')}</T>
+            <T style={{ color: theme.muted, fontSize: 14 }}>{hijriToday}</T>
           </View>
-          {busy ? <ActivityIndicator color={theme.brass} /> : <Btn label="Use my location" onPress={useGps} />}
+          <Stepper value={settings.hijriAdjust || 0} min={-2} max={2} format={days} label={t('calendar.adjust')}
+            onChange={(v) => update({ hijriAdjust: v })} />
         </Row>
         <Row>
-          <T>Choose a city</T>
-          <Btn label={picker === 'city' ? 'Hide' : 'Choose'} onPress={() => setPicker(picker === 'city' ? null : 'city')} />
+          <View style={{ flex: 1 }}><T>{t('calendar.friday')}</T><T style={{ color: theme.muted, fontSize: 14 }}>{t('calendar.fridaySub')}</T></View>
+          <Toggle value={settings.friday !== false} onChange={(v) => update({ friday: v })} />
         </Row>
-        {picker === 'city' && CITIES.map((c) => (
-          <Pressable key={c.name} onPress={() => { update({ location: c, ...defaultsForCountry(c.country), methodAuto: true }); setPicker(null); setMsg('Updated to ' + c.name); }}
+        <Row>
+          <View style={{ flex: 1 }}><T>{t('calendar.white')}</T><T style={{ color: theme.muted, fontSize: 14 }}>{t('calendar.whiteSub')}</T></View>
+          <Toggle value={settings.whiteDays !== false} onChange={(v) => update({ whiteDays: v })} />
+        </Row>
+        <Row>
+          <View style={{ flex: 1 }}><T>{t('calendar.ramadan')}</T><T style={{ color: theme.muted, fontSize: 14 }}>{t('calendar.ramadanSub')}</T></View>
+          <Toggle value={settings.ramadan !== false} onChange={(v) => update({ ramadan: v })} />
+        </Row>
+      </Group>
+
+      <Group label={t('location.title')} theme={theme}>
+        <Row first>
+          <View style={{ flex: 1 }}>
+            <T style={{ fontFamily: FONTS.uiBold }}>{settings.location?.name || t('location.notSet')}</T>
+            <T style={{ color: theme.muted, fontSize: 14 }}>{settings.location?.source === 'gps' ? t('location.fromPhone') : t('location.manual')}</T>
+          </View>
+          {busy ? <ActivityIndicator color={theme.brass} /> : <Btn label={t('location.useMine')} onPress={useGps} />}
+        </Row>
+        <Row>
+          <T>{t('location.chooseCity')}</T>
+          <Btn label={picker === 'city' ? t('common.hide') : t('common.choose')} onPress={() => setPicker(picker === 'city' ? null : 'city')} />
+        </Row>
+        {picker === 'city' && CITIES.map((x) => (
+          <Pressable key={x.name} onPress={() => { update({ location: { ...x, at: Date.now() }, ...defaultsForCountry(x.country), methodAuto: true }); setPicker(null); setMsg(t('location.updated', { name: x.name })); }}
             style={[styles.opt, { borderTopColor: theme.line }]}>
-            <T>{c.name}</T>
+            <T>{x.name}</T>
           </Pressable>
         ))}
         {msg ? <Row><T style={{ color: theme.muted, fontSize: 15 }}>{msg}</T></Row> : null}
       </Group>
 
-      <Group label="Calculation" theme={theme}>
+      <Group label={t('calc.title')} theme={theme}>
         <Row first>
-          <View style={{ flex: 1 }}><T>Method</T><T style={{ color: theme.muted, fontSize: 14 }}>{METHODS[settings.method]}</T></View>
-          <Btn label={picker === 'method' ? 'Hide' : 'Change'} onPress={() => setPicker(picker === 'method' ? null : 'method')} />
+          <View style={{ flex: 1 }}><T>{t('calc.method')}</T><T style={{ color: theme.muted, fontSize: 14 }}>{METHODS[settings.method]}</T></View>
+          <Btn label={picker === 'method' ? t('common.hide') : t('common.change')} onPress={() => setPicker(picker === 'method' ? null : 'method')} />
         </Row>
         {picker === 'method' && Object.entries(METHODS).map(([k, v]) => (
           <Pressable key={k} onPress={() => { update({ method: k, methodAuto: false }); setPicker(null); }}
@@ -198,51 +232,38 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
           </Pressable>
         ))}
         <Row>
-          <T>Asr</T>
+          <T>{t('prayer.asr')}</T>
           <View style={[styles.seg, { borderColor: theme.line }]}>
             {['Shafi', 'Hanafi'].map((m) => (
               <Pressable key={m} onPress={() => update({ madhab: m, methodAuto: false })} style={[styles.segBtn, settings.madhab === m && { backgroundColor: theme.brass }]}>
-                <T style={{ fontSize: 15, color: settings.madhab === m ? theme.bg : theme.fg }}>{m === 'Shafi' ? 'Standard' : 'Hanafi'}</T>
+                <T style={{ fontSize: 15, color: settings.madhab === m ? theme.bg : theme.fg }}>{m === 'Shafi' ? t('calc.standard') : t('calc.hanafi')}</T>
               </Pressable>
             ))}
           </View>
         </Row>
       </Group>
 
-      <Group label="Fine-tune times" theme={theme}>
+      <Group label={t('tune.title')} theme={theme}>
         <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-          <T style={{ color: theme.muted, fontSize: 14 }}>If your masjid's timetable differs by a minute or two, adjust each prayer here.</T>
+          <T style={{ color: theme.muted, fontSize: 14 }}>{t('tune.body')}</T>
         </Row>
-        {PRAYERS.map((p) => {
-          const v = settings.adjust?.[p.key] || 0;
-          const set = (n) => update({ adjust: { ...settings.adjust, [p.key]: Math.max(-30, Math.min(30, n)) } });
-          return (
-            <Row key={p.key}>
-              <T>{p.name}</T>
-              <View style={styles.stepper}>
-                <Pressable onPress={() => set(v - 1)} hitSlop={6} accessibilityLabel={`${p.name} one minute earlier`} style={[styles.stepBtn, { borderColor: theme.line }]}>
-                  <T style={{ fontSize: 20.5 }}>−</T>
-                </Pressable>
-                <T style={{ width: 64, textAlign: 'center', fontVariant: ['tabular-nums'], color: v ? theme.brass : theme.muted }}>
-                  {v === 0 ? '0 min' : `${v > 0 ? '+' : ''}${v} min`}
-                </T>
-                <Pressable onPress={() => set(v + 1)} hitSlop={6} accessibilityLabel={`${p.name} one minute later`} style={[styles.stepBtn, { borderColor: theme.line }]}>
-                  <T style={{ fontSize: 20.5 }}>+</T>
-                </Pressable>
-              </View>
-            </Row>
-          );
-        })}
+        {PRAYERS.map((p) => (
+          <Row key={p.key}>
+            <T>{prayerName(p.key)}</T>
+            <Stepper value={settings.adjust?.[p.key] || 0} min={-30} max={30} format={minutes} label={prayerName(p.key)}
+              onChange={(n) => update({ adjust: { ...settings.adjust, [p.key]: n } })} />
+          </Row>
+        ))}
       </Group>
 
-      <Group label="Reminders" theme={theme}>
+      <Group label={t('reminders.title')} theme={theme}>
         <Row first style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-          <T>Tasbeeh reminder, minutes after each prayer</T>
+          <T>{t('reminders.after')}</T>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
             {OFFSETS.map((o) => (
               <Pressable key={o} onPress={() => update({ offset: o })}
                 style={[styles.chip, { borderColor: settings.offset === o ? theme.brass : theme.line }, settings.offset === o && { backgroundColor: theme.brassSoft }]}>
-                <T style={{ fontSize: 15 }}>{o} min</T>
+                <T style={{ fontSize: 15 }}>{t('unit.min', { n: o })}</T>
               </Pressable>
             ))}
           </View>
@@ -250,26 +271,35 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
         {PRAYERS.map((p) => (
           <Row key={p.key}>
             <View style={{ flex: 1 }}>
-              <T>{p.name}</T>
-              <T style={{ color: theme.muted, fontSize: 13 }}>{alert.on ? 'Prayer time alert and tasbeeh reminder' : 'Tasbeeh reminder'}</T>
+              <T>{prayerName(p.key)}</T>
+              <T style={{ color: theme.muted, fontSize: 13 }}>{alert.on ? t('reminders.both') : t('reminders.only')}</T>
             </View>
-            <Switch value={!!settings.prayers[p.key]} onValueChange={(v) => update({ prayers: { ...settings.prayers, [p.key]: v } })}
-              trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+            <Toggle value={!!settings.prayers[p.key]} onChange={(v) => update({ prayers: { ...settings.prayers, [p.key]: v } })} />
           </Row>
         ))}
         <Row>
-          <View style={{ flex: 1 }}><T>Daily tasbeeh</T><T style={{ color: theme.muted, fontSize: 14 }}>9:00 AM · 2:30 PM · 10:00 PM</T></View>
-          <Switch value={settings.daily} onValueChange={(v) => update({ daily: v })} trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+          <View style={{ flex: 1 }}><T>{t('reminders.daily')}</T><T style={{ color: theme.muted, fontSize: 14 }}>9:00 AM · 2:30 PM · 10:00 PM</T></View>
+          <Toggle value={settings.daily} onChange={(v) => update({ daily: v })} />
         </Row>
         <Row>
-          <T>Vibrate on each count</T>
-          <Switch value={settings.haptics} onValueChange={(v) => update({ haptics: v })} trackColor={{ true: theme.brass, false: theme.bead }} thumbColor="#fff" />
+          <T>{t('reminders.vibrate')}</T>
+          <Toggle value={settings.haptics} onChange={(v) => update({ haptics: v })} />
         </Row>
       </Group>
 
-      <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20.5, fontFamily: FONTS.ui }}>
-        Times are calculated on your phone from your location and the method above. They follow you when you travel, and you can fine-tune each prayer to match your masjid. Reminders are scheduled a week ahead and refresh automatically.
-      </Text>
+      <Group label={t('lang.title')} theme={theme}>
+        {Object.entries(LANGS).map(([k, label], i) => {
+          const on = (settings.lang || 'system') === k;
+          return (
+            <Pressable key={k} onPress={() => onLanguage(k)} style={[styles.row, { borderTopColor: theme.line, borderTopWidth: i ? 1 : 0 }, on && { backgroundColor: theme.brassSoft }]}>
+              <T style={{ fontFamily: on ? FONTS.uiBold : FONTS.ui }}>{label || t('lang.system')}</T>
+              {on ? <T style={{ color: theme.brass }}>✓</T> : null}
+            </Pressable>
+          );
+        })}
+      </Group>
+
+      <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20.5, fontFamily: FONTS.ui }}>{t('prayers.footer')}</Text>
     </Sheet>
   );
 }

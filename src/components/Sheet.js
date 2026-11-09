@@ -2,18 +2,19 @@ import React from 'react';
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FONTS } from '../theme';
+import { t } from '../i18n';
 
 export default function Sheet({ visible, title, onClose, theme, children }) {
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={[styles.wrap, { backgroundColor: theme.scrim }]}>
-        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={t('common.close')} />
         <View style={[styles.sheet, { backgroundColor: theme.bg, borderColor: theme.line, paddingBottom: insets.bottom }]}>
           <View style={styles.head}>
             <Text style={[styles.title, { color: theme.fg }]}>{title}</Text>
             <Pressable onPress={onClose} style={[styles.done, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-              <Text style={{ color: theme.fg, fontFamily: FONTS.ui }}>Done</Text>
+              <Text style={{ color: theme.fg, fontFamily: FONTS.ui }}>{t('common.done')}</Text>
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>{children}</ScrollView>

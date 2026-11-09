@@ -6,6 +6,7 @@ import { detectLocation, CITIES } from '../lib/location';
 import { defaultsForCountry } from '../lib/prayer';
 import { requestNotificationPermission } from '../lib/notifications';
 import { FONTS } from '../theme';
+import { t } from '../i18n';
 
 export default function Onboarding({ theme, onDone }) {
   const [step, setStep] = useState('location'); // location | cities | notify
@@ -17,7 +18,7 @@ export default function Onboarding({ theme, onDone }) {
     setBusy(true); setErr('');
     try {
       const r = await detectLocation();
-      if (r.denied) { setErr('No problem. Pick your city instead, or allow location later in Settings.'); setStep('cities'); }
+      if (r.denied) { setErr(t('onb.denied')); setStep('cities'); }
       else { setLoc(r); setStep('notify'); }
     } catch (e) { setErr(e.message); setStep('cities'); }
     setBusy(false);
@@ -42,7 +43,7 @@ export default function Onboarding({ theme, onDone }) {
     <SafeAreaView style={[styles.wrap, { backgroundColor: theme.bg }]}>
       {step === 'cities' ? (
         <View style={{ flex: 1, gap: 12 }}>
-          <Text style={[styles.h, { color: theme.fg, fontSize: 26 }]}>Choose your city</Text>
+          <Text style={[styles.h, { color: theme.fg, fontSize: 26 }]}>{t('onb.chooseCity')}</Text>
           {err ? <Text style={[styles.p, { color: theme.muted }]}>{err}</Text> : null}
           <ScrollView style={[styles.list, { borderColor: theme.line, backgroundColor: theme.surface }]}>
             {CITIES.map((c, i) => (
@@ -52,8 +53,8 @@ export default function Onboarding({ theme, onDone }) {
               </Pressable>
             ))}
           </ScrollView>
-          <Secondary label="Try my location again" onPress={askLocation} />
-          <Secondary label="Open phone settings" onPress={() => Linking.openSettings()} />
+          <Secondary label={t('onb.tryAgain')} onPress={askLocation} />
+          <Secondary label={t('common.openSettings')} onPress={() => Linking.openSettings()} />
         </View>
       ) : (
         <View style={styles.center}>
@@ -61,24 +62,21 @@ export default function Onboarding({ theme, onDone }) {
           <Text style={[styles.ar, { color: theme.fg }]}>سُبْحَانَ اللَّهِ</Text>
           {step === 'location' ? (
             <>
-              <Text style={[styles.h, { color: theme.fg }]}>Prayer times wherever you are</Text>
-              <Text style={[styles.p, { color: theme.muted }]}>
-                Ratb uses your location to calculate the five prayer times and remind you to do your tasbeeh after each one. Your location stays on your phone.
-              </Text>
+              <Text style={[styles.meaning, { color: theme.brass }]}>{t('onb.nameMeaning')}</Text>
+              <Text style={[styles.h, { color: theme.fg }]}>{t('onb.locTitle')}</Text>
+              <Text style={[styles.p, { color: theme.muted }]}>{t('onb.locBody')}</Text>
               <View style={styles.actions}>
-                <Primary label="Use my location" onPress={askLocation} />
-                <Secondary label="Choose a city instead" onPress={() => setStep('cities')} />
+                <Primary label={t('location.useMine')} onPress={askLocation} />
+                <Secondary label={t('onb.cityInstead')} onPress={() => setStep('cities')} />
               </View>
             </>
           ) : (
             <>
-              <Text style={[styles.h, { color: theme.fg }]}>Reminders after every prayer</Text>
-              <Text style={[styles.p, { color: theme.muted }]}>
-                Set for {loc?.name}. Turn on notifications to get a gentle reminder after each prayer and three times a day for your tasbeeh.
-              </Text>
+              <Text style={[styles.h, { color: theme.fg }]}>{t('onb.notifTitle')}</Text>
+              <Text style={[styles.p, { color: theme.muted }]}>{t('onb.notifBody', { place: loc?.name || '' })}</Text>
               <View style={styles.actions}>
-                <Primary label="Turn on reminders" onPress={() => finish(true)} />
-                <Secondary label="Not now" onPress={() => finish(false)} />
+                <Primary label={t('onb.turnOn')} onPress={() => finish(true)} />
+                <Secondary label={t('onb.notNow')} onPress={() => finish(false)} />
               </View>
             </>
           )}
@@ -91,6 +89,7 @@ export default function Onboarding({ theme, onDone }) {
 const styles = StyleSheet.create({
   wrap: { flex: 1, paddingHorizontal: 24, paddingVertical: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
+  meaning: { fontFamily: FONTS.ui, fontSize: 15, lineHeight: 22, textAlign: 'center', maxWidth: 330, fontStyle: 'italic' },
   ar: { fontFamily: FONTS.ar, fontSize: 30, lineHeight: 50 },
   h: { fontFamily: FONTS.numMed, fontSize: 28, textAlign: 'center', lineHeight: 34 },
   p: { fontFamily: FONTS.ui, fontSize: 17, lineHeight: 25, textAlign: 'center', maxWidth: 340 },

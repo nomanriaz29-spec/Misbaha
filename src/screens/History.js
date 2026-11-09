@@ -2,13 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Sheet, { Group } from '../components/Sheet';
 import { dateKey, stats } from '../lib/history';
-import { labelFor } from '../lib/recommend';
+import { labelFor, setName } from '../lib/recommend';
+import { t } from '../i18n';
 import { SETS } from '../data/adhkar';
 import { FONTS, FILL } from '../theme';
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEKDAYS = () => t('cal.weekdaysShort').split(','); // Monday first
+const MONTHS = () => t('cal.months').split(',');
+const DAYS = () => t('cal.days').split(','); // Sunday first
 
 // Shade a day by how much tasbeeh was done.
 const level = (n) => (n <= 0 ? 0 : n < 100 ? 1 : n < 300 ? 2 : 3);
@@ -41,33 +42,33 @@ export default function History({ visible, onClose, history, theme }) {
   const done = day?.done || {};
 
   return (
-    <Sheet visible={visible} title="Your history" onClose={onClose} theme={theme}>
+    <Sheet visible={visible} title={t('history.title')} onClose={onClose} theme={theme}>
       <View style={styles.statsRow}>
-        <Stat theme={theme} k="Streak" v={s.current} unit={s.current === 1 ? 'day' : 'days'} accent />
-        <Stat theme={theme} k="Best" v={s.best} unit={s.best === 1 ? 'day' : 'days'} />
-        <Stat theme={theme} k="7 days" v={s.week.toLocaleString()} />
-        <Stat theme={theme} k="All time" v={s.all.toLocaleString()} />
+        <Stat theme={theme} k={t('history.streak')} v={s.current} unit={t('history.days', { n: s.current })} accent />
+        <Stat theme={theme} k={t('history.best')} v={s.best} unit={t('history.days', { n: s.best })} />
+        <Stat theme={theme} k={t('history.week')} v={s.week.toLocaleString()} />
+        <Stat theme={theme} k={t('history.all')} v={s.all.toLocaleString()} />
       </View>
 
       <View style={[styles.cal, { backgroundColor: theme.surface, borderColor: theme.line }]}>
         <View style={styles.calHead}>
-          <Pressable onPress={() => shift(-1)} hitSlop={10} accessibilityLabel="Previous month" style={styles.nav}>
+          <Pressable onPress={() => shift(-1)} hitSlop={10} accessibilityLabel={t('history.prevMonth')} style={styles.nav}>
             <Text style={{ color: theme.fg, fontSize: 23 }}>‹</Text>
           </Pressable>
-          <Text style={[styles.month, { color: theme.fg }]}>{MONTHS[month.getMonth()]} {month.getFullYear()}</Text>
-          <Pressable onPress={() => canNext && shift(1)} hitSlop={10} accessibilityLabel="Next month" style={[styles.nav, !canNext && { opacity: 0.25 }]}>
+          <Text style={[styles.month, { color: theme.fg }]}>{MONTHS()[month.getMonth()]} {month.getFullYear()}</Text>
+          <Pressable onPress={() => canNext && shift(1)} hitSlop={10} accessibilityLabel={t('history.nextMonth')} style={[styles.nav, !canNext && { opacity: 0.25 }]}>
             <Text style={{ color: theme.fg, fontSize: 23 }}>›</Text>
           </Pressable>
         </View>
         <View style={styles.grid}>
-          {WEEKDAYS.map((w) => <Text key={w} style={[styles.wd, { color: theme.muted }]}>{w.slice(0, 1)}</Text>)}
+          {WEEKDAYS().map((w, wi) => <Text key={wi} numberOfLines={1} adjustsFontSizeToFit style={[styles.wd, { color: theme.muted }]}>{w}</Text>)}
           {cells.map((d, i) => {
             if (!d) return <View key={i} style={styles.cell} />;
             const k = dateKey(d), n = history[k]?.total || 0, lv = level(n), future = isFuture(d);
             const selected = k === sel, todayCell = k === dateKey(today);
             return (
               <Pressable key={i} disabled={future} onPress={() => setSel(k)} style={styles.cell}
-                accessibilityLabel={`${d.getDate()} ${MONTHS[d.getMonth()]}, ${n} counts`}>
+                accessibilityLabel={`${d.getDate()} ${MONTHS()[d.getMonth()]}, ${n}`}>
                 <View style={[styles.dayBox, { borderColor: selected ? theme.fg : todayCell ? theme.brass : 'transparent' }]}>
                   {lv > 0 && <View style={[FILL, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 9 }]} />}
                   <Text style={{ fontFamily: FONTS.ui, fontSize: 15, color: future ? theme.line : lv >= 2 ? theme.bg : theme.fg, fontVariant: ['tabular-nums'] }}>{d.getDate()}</Text>
@@ -77,34 +78,34 @@ export default function History({ visible, onClose, history, theme }) {
           })}
         </View>
         <View style={styles.legend}>
-          <Text style={[styles.lg, { color: theme.muted }]}>Less</Text>
+          <Text style={[styles.lg, { color: theme.muted }]}>{t('history.less')}</Text>
           {[0, 1, 2, 3].map((lv) => (
             <View key={lv} style={[styles.sw, { borderColor: theme.line }]}>
               {lv > 0 && <View style={[FILL, { backgroundColor: theme.brass, opacity: LEVEL_OPACITY[lv], borderRadius: 3 }]} />}
             </View>
           ))}
-          <Text style={[styles.lg, { color: theme.muted }]}>More</Text>
+          <Text style={[styles.lg, { color: theme.muted }]}>{t('history.more')}</Text>
         </View>
       </View>
 
       <View style={{ gap: 8 }}>
         <View style={styles.dayHead}>
           <Text style={[styles.dayTitle, { color: theme.fg }]}>
-            {isToday ? 'Today' : `${DAYS[selDate.getDay()]} ${selDate.getDate()} ${MONTHS[selDate.getMonth()]}`}
+            {isToday ? t('history.today') : `${DAYS()[selDate.getDay()]} ${selDate.getDate()} ${MONTHS()[selDate.getMonth()]}`}
           </Text>
           <Text style={[styles.dayTotal, { color: theme.brass }]}>{(day?.total || 0).toLocaleString()}</Text>
         </View>
 
-        <Group label="Routines" theme={theme}>
+        <Group label={t('library.routines')} theme={theme}>
           {Object.entries(SETS).map(([id, set], i) => {
             const n = done['set:' + id] || 0;
             const goal = id === 'salah' ? 5 : 1;
             const full = n >= goal;
             return (
               <View key={id} style={[styles.row, { borderTopColor: theme.line, borderTopWidth: i ? 1 : 0 }]}>
-                <Text style={[styles.rowT, { color: theme.fg }]}>{set.name}</Text>
+                <Text style={[styles.rowT, { color: theme.fg }]}>{setName(id)}</Text>
                 <Text style={[styles.rowV, { color: full ? theme.ok : n ? theme.brass : theme.muted }]}>
-                  {id === 'salah' ? `${full ? '✓ ' : ''}${Math.min(n, 99)} of 5` : full ? '✓ Done' : '—'}
+                  {id === 'salah' ? `${full ? '✓ ' : ''}${t('history.ofFive', { n: Math.min(n, 99) })}` : full ? '✓ ' + t('history.done') : '—'}
                 </Text>
               </View>
             );
@@ -112,7 +113,7 @@ export default function History({ visible, onClose, history, theme }) {
         </Group>
 
         {items.length ? (
-          <Group label="Counts" theme={theme}>
+          <Group label={t('history.counts')} theme={theme}>
             {items.map(([k, n], i) => (
               <View key={k} style={[styles.row, { borderTopColor: theme.line, borderTopWidth: i ? 1 : 0 }]}>
                 <Text style={[styles.rowT, { color: theme.fg, flex: 1 }]} numberOfLines={1}>
@@ -124,12 +125,12 @@ export default function History({ visible, onClose, history, theme }) {
           </Group>
         ) : (
           <Text style={[styles.empty, { color: theme.muted }]}>
-            {isToday ? 'Nothing counted yet today. Tap the counter to begin.' : 'No tasbeeh recorded on this day.'}
+            {isToday ? t('history.emptyToday') : t('history.emptyDay')}
           </Text>
         )}
       </View>
 
-      <Text style={[styles.empty, { color: theme.muted, textAlign: 'left' }]}>Your history stays on this phone.</Text>
+      <Text style={[styles.empty, { color: theme.muted, textAlign: 'left' }]}>{t('history.private')}</Text>
     </Sheet>
   );
 }

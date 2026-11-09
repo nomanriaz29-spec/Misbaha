@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import Sheet from '../components/Sheet';
 import { qiblaBearing, distanceKm, compassPoint, angleDiff } from '../lib/qibla';
 import { FONTS, FILL } from '../theme';
+import { t } from '../i18n';
 
 const ALIGN_DEG = 5;
 
@@ -62,7 +63,7 @@ export default function Qibla({ visible, onClose, settings, theme }) {
     (async () => {
       setError('');
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') { setError('Allow location for Ratb to use the live compass.'); return; }
+      if (status !== 'granted') { setError(t('qibla.noPermission')); return; }
       try {
         sub = await Location.watchHeadingAsync((h) => {
           if (cancelled) return;
@@ -82,7 +83,7 @@ export default function Qibla({ visible, onClose, settings, theme }) {
           }
         });
       } catch (e) {
-        setError('This phone has no compass sensor. Use the bearing below with a separate compass.');
+        setError(t('qibla.noSensor'));
       }
     })();
     return () => { cancelled = true; sub && sub.remove(); };
@@ -98,13 +99,13 @@ export default function Qibla({ visible, onClose, settings, theme }) {
   const spin = useRef(rot.interpolate({ inputRange: [-360, 360], outputRange: ['-360deg', '360deg'], extrapolate: 'extend' })).current;
   const S = 280;
 
-  let status = 'Hold your phone flat';
+  let status = t('qibla.hold');
   if (error) status = error;
-  else if (aligned) status = 'You are facing the Qibla';
-  else if (off != null) status = `Turn ${off > 0 ? 'right' : 'left'} ${Math.abs(off)}°`;
+  else if (aligned) status = t('qibla.facing');
+  else if (off != null) status = t(off > 0 ? 'qibla.right' : 'qibla.left', { n: Math.abs(off) });
 
   return (
-    <Sheet visible={visible} title="Qibla" onClose={onClose} theme={theme}>
+    <Sheet visible={visible} title={t('qibla.title')} onClose={onClose} theme={theme}>
       <View style={{ alignItems: 'center', gap: 16 }}>
         <View style={{ width: S, height: S }}>
           {/* fixed pointer: the top of the phone */}
@@ -118,21 +119,21 @@ export default function Qibla({ visible, onClose, settings, theme }) {
 
         <Text style={[styles.status, { color: aligned ? theme.ok : theme.fg }]}>{status}</Text>
         {lowAccuracy && !error ? (
-          <Text style={[styles.note, { color: theme.brass }]}>Compass needs calibrating. Move your phone in a figure-8 a few times, away from metal and magnets.</Text>
+          <Text style={[styles.note, { color: theme.brass }]}>{t('qibla.calibrate')}</Text>
         ) : null}
 
         <View style={[styles.facts, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-          <Fact theme={theme} k="Qibla" v={`${Math.round(bearing)}° ${compassPoint(bearing)}`} />
-          <Fact theme={theme} k="Makkah" v={`${Math.round(km).toLocaleString()} km`} />
-          <Fact theme={theme} k="From" v={loc?.name || '—'} />
+          <Fact theme={theme} k={t('qibla.title')} v={`${Math.round(bearing)}° ${compassPoint(bearing)}`} />
+          <Fact theme={theme} k={t('qibla.makkah')} v={t('unit.km', { n: Math.round(km).toLocaleString() })} />
+          <Fact theme={theme} k={t('qibla.from')} v={loc?.name || '—'} />
         </View>
 
         {error ? (
           <Pressable onPress={() => Linking.openSettings()} style={[styles.btn, { borderColor: theme.line }]}>
-            <Text style={{ color: theme.fg, fontFamily: FONTS.ui }}>Open phone settings</Text>
+            <Text style={{ color: theme.fg, fontFamily: FONTS.ui }}>{t('common.openSettings')}</Text>
           </Pressable>
         ) : null}
-        <Text style={[styles.note, { color: theme.muted }]}>Bearing is measured from true north. Keep the phone flat and away from metal for the most accurate reading.</Text>
+        <Text style={[styles.note, { color: theme.muted }]}>{t('qibla.note')}</Text>
       </View>
     </Sheet>
   );

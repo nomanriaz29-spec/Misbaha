@@ -2,6 +2,9 @@ import * as TaskManager from 'expo-task-manager';
 import * as BackgroundTask from 'expo-background-task';
 import { loadSettings } from './storage';
 import { rescheduleAll } from './notifications';
+import { loadCustom } from './custom';
+import { setCustomRegistry } from './recommend';
+import { applyLang } from '../i18n';
 
 export const TASK = 'misbaha-reschedule';
 
@@ -10,6 +13,8 @@ export const TASK = 'misbaha-reschedule';
 TaskManager.defineTask(TASK, async () => {
   try {
     const s = await loadSettings();
+    applyLang(s.lang); // notification text in the user's language
+    setCustomRegistry(await loadCustom());
     await rescheduleAll(s);
     return BackgroundTask.BackgroundTaskResult.Success;
   } catch (e) {
