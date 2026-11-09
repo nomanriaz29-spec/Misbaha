@@ -13,7 +13,9 @@
     "submit:android": "eas submit --platform android --latest",
     "submit:ios": "eas submit --platform ios --latest",
     "build:ios:test": "eas build --platform ios --profile preview",
-    "register-iphone": "eas device:create"
+    "register-iphone": "eas device:create",
+    "update": "eas update --channel production --environment production --message",
+    "update:preview": "eas update --channel preview --environment preview --message"
   },
   "dependencies": {
     "expo": "~58.0.23",

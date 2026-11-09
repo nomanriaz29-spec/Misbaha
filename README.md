@@ -132,7 +132,21 @@ See [SECURITY.md](SECURITY.md) for the security review and the checks to run bef
 
 ## 5. Updating the app later
 
-- Bump `version` in `app.json`, and also `ios.buildNumber` and `android.versionCode`, then build and submit again.
+**Build numbers are automatic.** EAS keeps the iOS build number and Android version code on its servers (`appVersionSource: remote`) and raises them on every production build. You never edit `buildNumber` or `versionCode`. To release a new store version, change only `"version"` in app.json (for example 1.0.0 → 1.1.0).
+
+**Over-the-air updates (EAS Update).** Changes to JavaScript, text, duas, layout and colours can go straight to installed apps without a new store review:
+
+```bash
+npx expo install expo-updates   # one time only
+npm run update -- "Fix typo in evening adhkar"
+```
+
+The app downloads the update the next time it opens and uses it on the launch after. Use `npm run update:preview -- "message"` to send it only to preview/TestFlight builds first.
+
+Updates can't change native parts: new packages, permissions, sounds, icons, the widget, or app.json plugins. Those need a new `eas build` and store upload. The runtime version uses Expo's *fingerprint* policy, which detects native changes automatically and won't send an update to a build that can't run it.
+
+### Editing content
+
 - To add or edit adhkar, change `src/data/adhkar.js`. To change the daily reminder times, edit `DAILY` in that file.
 
 ## Notes on accuracy
