@@ -74,7 +74,7 @@ struct WidgetSnapshot {
     check(late.count == 1 && late[0].next == nil, "when the saved days run out it asks to open the app")
     let (none, nonePolicy) = buildTimeline(now: Date(), data: nil)
     check(none.count == 1 && none[0].next == nil, "no data: shows the open-the-app message")
-    if case .after = nonePolicy { check(true, "no data: retries within the hour") } else { check(false, "no data: retries within the hour") }
+    check(nonePolicy == .after(Date(timeIntervalSince1970: 0)) || (nonePolicy != .atEnd && nonePolicy != .never), "no data: retries later instead of giving up")
 
     // --- Snapshots -----------------------------------------------------------
     let dir = URL(fileURLWithPath: out)
