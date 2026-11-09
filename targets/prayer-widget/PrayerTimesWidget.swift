@@ -28,29 +28,61 @@ struct Prayer: Hashable {
   let date: Date
 }
 
+// Words shown in the widget. The app sends them in its current language (English, Arabic or Urdu).
+struct WidgetLabels {
+  var next = "NEXT PRAYER"
+  var inPrefix = "in"
+  var open = "Open the app to load prayer times."
+  var rtl = false
+}
+
 private struct Payload: Decodable {
   struct Day: Decodable {
     let d: String
     let t: [Double] // fajr, dhuhr, asr, maghrib, isha as unix seconds
   }
+  struct Labels: Decodable {
+    let names: [String]?
+    let next: String?
+    let inPrefix: String?
+    let open: String?
+    let rtl: Bool?
+  }
   let place: String
   let days: [Day]
+  let labels: Labels?
 }
 
-func loadPrayers(defaults: UserDefaults? = UserDefaults(suiteName: appGroup)) -> (place: String, prayers: [Prayer])? {
+struct PrayerData {
+  let place: String
+  let prayers: [Prayer]
+  var labels = WidgetLabels()
+}
+
+func loadPrayers(defaults: UserDefaults? = UserDefaults(suiteName: appGroup)) -> PrayerData? {
   guard
     let raw = defaults?.string(forKey: "prayers"),
     let data = raw.data(using: .utf8),
     let payload = try? JSONDecoder().decode(Payload.self, from: data)
   else { return nil }
 
+  var names = prayerNames
+  if let n = payload.labels?.names, n.count == prayerNames.count { names = n }
+  var labels = WidgetLabels()
+  if let l = payload.labels {
+    if let v = l.next, !v.isEmpty { labels.next = v }
+    if let v = l.inPrefix { labels.inPrefix = v }
+    if let v = l.open, !v.isEmpty { labels.open = v }
+    labels.rtl = l.rtl ?? false
+  }
+
   var list: [Prayer] = []
   for day in payload.days {
-    for (i, ts) in day.t.enumerated() where i < prayerNames.count {
-      list.append(Prayer(name: prayerNames[i], date: Date(timeIntervalSince1970: ts)))
+    for (i, ts) in day.t.enumerated() where i < names.count {
+      list.append(Prayer(name: names[i], date: Date(timeIntervalSince1970: ts)))
     }
   }
-  return (payload.place, list.sorted { $0.date < $1.date })
+  return PrayerData(place: payload.place, prayers: list.sorted { $0.date < $1.date }, labels: labels)
 }
 
 struct PrayerEntry: TimelineEntry {
@@ -58,13 +90,14 @@ struct PrayerEntry: TimelineEntry {
   let place: String
   let next: Prayer?
   let day: [Prayer] // the five prayers of the day the next prayer falls on
+  var labels = WidgetLabels()
 }
 
-func makeEntry(at date: Date, place: String, prayers: [Prayer]) -> PrayerEntry {
+func makeEntry(at date: Date, place: String, prayers: [Prayer], labels: WidgetLabels = WidgetLabels()) -> PrayerEntry {
   let next = prayers.first { $0.date > date }
   let anchor = next?.date ?? date
   let day = prayers.filter { Calendar.current.isDate($0.date, inSameDayAs: anchor) }
-  return PrayerEntry(date: date, place: place, next: next, day: day)
+  return PrayerEntry(date: date, place: place, next: next, day: day, labels: labels)
 }
 
 // Shown in the widget gallery before the app has saved any times.
@@ -86,7 +119,7 @@ struct Provider: TimelineProvider {
 
   func getSnapshot(in context: Context, completion: @escaping (PrayerEntry) -> Void) {
     if let data = loadPrayers() {
-      completion(makeEntry(at: Date(), place: data.place, prayers: data.prayers))
+      completion(makeEntry(at: Date(), place: data.place, prayers: data.prayers, labels: data.labels))
     } else {
       completion(sampleEntry())
     }
@@ -101,13 +134,13 @@ struct Provider: TimelineProvider {
 }
 
 // Pure function so it can be tested outside WidgetKit (see ci/WidgetSnapshot.swift).
-func buildTimeline(now: Date, data: (place: String, prayers: [Prayer])?) -> ([PrayerEntry], TimelineReloadPolicy) {
+func buildTimeline(now: Date, data: PrayerData?) -> ([PrayerEntry], TimelineReloadPolicy) {
   guard let data = data, !data.prayers.isEmpty else {
-    return ([PrayerEntry(date: now, place: "", next: nil, day: [])], .after(now.addingTimeInterval(3600)))
+    return ([PrayerEntry(date: now, place: "", next: nil, day: [], labels: data?.labels ?? WidgetLabels())], .after(now.addingTimeInterval(3600)))
   }
   var dates = [now]
   dates.append(contentsOf: data.prayers.map(\.date).filter { $0 > now }.prefix(10))
-  let entries = dates.map { makeEntry(at: $0, place: data.place, prayers: data.prayers) }
+  let entries = dates.map { makeEntry(at: $0, place: data.place, prayers: data.prayers, labels: data.labels) }
   return (entries, .atEnd)
 }
 
@@ -119,7 +152,7 @@ private struct NextBlock: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text("NEXT PRAYER")
+      Text(entry.labels.next)
         .font(.system(size: 10, weight: .semibold))
         .kerning(0.8)
         .foregroundStyle(muted)
@@ -132,7 +165,7 @@ private struct NextBlock: View {
         .font(.system(size: 17, weight: .semibold))
         .foregroundStyle(brass)
       Spacer(minLength: 4)
-      Text("in \(next.date, style: .relative)")
+      Text("\(entry.labels.inPrefix) \(next.date, style: .relative)")
         .font(.system(size: 12))
         .foregroundStyle(fg)
         .lineLimit(1)
@@ -177,6 +210,7 @@ struct PrayerWidgetView: View {
 
   var body: some View {
     content
+      .environment(\.layoutDirection, entry.labels.rtl ? .rightToLeft : .leftToRight)
       .containerBackground(for: .widget) { background }
   }
 
@@ -214,7 +248,7 @@ struct PrayerWidgetView: View {
             .widgetAccentable()
           Text(next.date, style: .time)
             .font(.system(size: 15, weight: .semibold))
-          Text("in \(next.date, style: .relative)")
+          Text("\(entry.labels.inPrefix) \(next.date, style: .relative)")
             .font(.caption)
             .foregroundStyle(.secondary)
         }
@@ -235,7 +269,7 @@ struct PrayerWidgetView: View {
         Text("Ratb")
           .font(.system(size: 15, weight: .semibold, design: .serif))
           .foregroundStyle(fg)
-        Text("Open the app to load prayer times.")
+        Text(entry.labels.open)
           .font(.system(size: 12))
           .foregroundStyle(muted)
       }

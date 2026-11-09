@@ -39,6 +39,9 @@ struct WidgetSnapshot {
       days.append(["d": "day\(d)", "t": t])
     }
     let payload: [String: Any] = ["place": "Dubai", "updated": Date().timeIntervalSince1970, "days": days]
+    // Same days with Arabic labels, as the app writes when its language is Arabic.
+    let arPayload: [String: Any] = ["place": "دبي", "updated": Date().timeIntervalSince1970, "days": days,
+      "labels": ["names": ["الفجر", "الظهر", "العصر", "المغرب", "العشاء"], "next": "الصلاة القادمة", "inPrefix": "بعد", "open": "افتح التطبيق", "rtl": true]]
     let json = String(data: try! JSONSerialization.data(withJSONObject: payload), encoding: .utf8)!
     let suite = UserDefaults(suiteName: "ratb.widget.snapshot")!
     suite.set(json, forKey: "prayers")
@@ -53,6 +56,11 @@ struct WidgetSnapshot {
     check(loadPrayers(defaults: suite) == nil, "missing data returns nil")
 
     guard let data = data else { return failed + 1 }
+
+    suite.set(String(data: try! JSONSerialization.data(withJSONObject: arPayload), encoding: .utf8)!, forKey: "prayers")
+    let arData = loadPrayers(defaults: suite)
+    check(arData?.prayers.first?.name == "الفجر" && arData?.labels.rtl == true && arData?.labels.next == "الصلاة القادمة", "reads Arabic prayer names and labels")
+    suite.removeObject(forKey: "prayers")
 
     // --- Timeline ------------------------------------------------------------
     let (afternoon, policy) = buildTimeline(now: at(0, 14, 20), data: data)
@@ -106,6 +114,7 @@ struct WidgetSnapshot {
     let now = afternoon[0]
     let night = afternoon.first(where: { cal.isDate($0.date, equalTo: at(0, 18, 54), toGranularity: .minute) }) ?? now
     let empty = none[0]
+    let arNow = arData.map { buildTimeline(now: at(0, 14, 20), data: $0).0[0] }
     let small = CGSize(width: 170, height: 170), medium = CGSize(width: 364, height: 170)
     save(home(now, .systemSmall, small), small, "1-small")
     save(home(now, .systemMedium, medium), medium, "2-medium")
@@ -115,6 +124,10 @@ struct WidgetSnapshot {
     save(lock(now, .accessoryCircular, CGSize(width: 76, height: 76)), CGSize(width: 76, height: 76), "6-lock-circular")
     save(lock(now, .accessoryInline, CGSize(width: 260, height: 24)), CGSize(width: 260, height: 24), "7-lock-inline")
     save(home(sampleEntry(), .systemSmall, small), small, "8-gallery-placeholder")
+    if let e = arNow {
+      save(home(e, .systemMedium, medium), medium, "9-medium-arabic")
+      save(lock(e, .accessoryRectangular, CGSize(width: 172, height: 76)), CGSize(width: 172, height: 76), "10-lock-arabic")
+    }
     _ = fmt
     return failed
   }
