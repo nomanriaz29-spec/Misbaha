@@ -29,9 +29,10 @@ export function prayerModel(settings, now = new Date()) {
   };
 }
 
-export function verseModel(now = new Date()) {
+export function verseModel(now = new Date(), every = 'day') {
   const lang = getLang();
-  return { ...verseFor(now, lang), title: t('widget.verseTitle'), rtl: isRTL(), lang };
+  const hourly = every === 'hour';
+  return { ...verseFor(now, lang, hourly ? 'hour' : 'day'), title: t(hourly ? 'widget.verseHourTitle' : 'widget.verseTitle'), rtl: isRTL(), lang };
 }
 
 // Android only refreshes a widget every 30 minutes on its own, so after each prayer begins the

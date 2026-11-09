@@ -302,6 +302,22 @@ export default function Schedule({ visible, onClose, onStart, settings, update, 
             ) : null}
           </Row>
         ))}
+        <Row>
+          <View style={{ flex: 1, gap: 8 }}>
+            <T>{t('widgets.verseEvery')}</T>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {['day', 'hour'].map((k) => {
+                const on = (settings.verseEvery || 'day') === k;
+                return (
+                  <Pressable key={k} onPress={() => update({ verseEvery: k })} accessibilityRole="radio" accessibilityState={{ checked: on }}
+                    style={[styles.soundOpt, { borderColor: on ? theme.brass : theme.line }, on && { backgroundColor: theme.brassSoft }]}>
+                    <T style={{ fontFamily: on ? FONTS.uiBold : FONTS.ui }}>{t('widgets.every.' + k)}</T>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </Row>
         <Row><T style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>{widgetMsg || (Platform.OS === 'android' ? t('widgets.howAndroid') : t('widgets.howIos'))}</T></Row>
       </Group>
 

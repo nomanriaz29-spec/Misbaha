@@ -22,6 +22,7 @@ export const DEFAULT_SETTINGS = {
   friday: true, // Friday reminder: Surah al-Kahf and salawat
   whiteDays: true, // reminder before the 13th-15th of each Hijri month
   ramadan: true, // suhoor reminders and iftar countdown in Ramadan
+  verseEvery: 'day', // verse widget changes every 'day' or every 'hour'
 };
 const OFFSETS = [5, 10, 15, 20, 30];
 
@@ -77,6 +78,7 @@ function cleanSettings(s) {
     friday: s.friday !== false,
     whiteDays: s.whiteDays !== false,
     ramadan: s.ramadan !== false,
+    verseEvery: s.verseEvery === 'hour' ? 'hour' : 'day',
   };
 }
 

@@ -133,7 +133,11 @@ struct WidgetSnapshot {
     func verseDefaults(_ key: String) -> UserDefaults {
       let d = UserDefaults(suiteName: "verse-test-\(key)")!
       var json = verseFixtures[key]!
-      for i in 0..<3 { json = json.replacingOccurrences(of: "DAY\(i)", with: verseDayKey(at(i, 12, 0))) }
+      for i in 0..<3 {
+        json = json.replacingOccurrences(of: "DAY\(i)", with: verseDayKey(at(i, 12, 0)))
+        json = json.replacingOccurrences(of: "\"T\(i)\"", with: String(Int(at(i, 0, 0).timeIntervalSince1970)))
+      }
+      for h in 0..<24 { json = json.replacingOccurrences(of: "\"H\(h)\"", with: String(Int(at(0, h, 0).timeIntervalSince1970))) }
       d.set(json, forKey: "verses")
       return d
     }
@@ -206,6 +210,43 @@ struct WidgetSnapshot {
     save(today(now, .accessoryRectangular, CGSize(width: 172, height: 76), lockStyle: true), CGSize(width: 172, height: 76), "25-today-lock")
     if let e = arNow { save(today(e, .systemSmall, small), small, "26-today-small-arabic") }
     save(today(empty, .systemSmall, small), small, "27-today-no-data")
+
+    // --- Verse every hour + lock screen --------------------------------------
+    let vHour = loadVerses(defaults: verseDefaults("hourEn"))
+    check(vHour?.labels.hourly == true && vHour?.verses.count == 3 && vHour?.labels.title == "Verse of the hour", "hourly verse: reads hourly data")
+    if let vHour {
+      let (ht, hPolicy) = buildVerseTimeline(now: at(0, 14, 20), data: vHour)
+      check(ht.first?.verse?.start == at(0, 14, 0), "hourly verse: at 14:20 shows the 14:00 verse")
+      check(ht.count == 3 && ht[1].date == at(0, 15, 0), "hourly verse: switches on the hour (got \(ht.count) entries)")
+      check(ht[0].verse != ht[1].verse, "hourly verse: a different verse each hour")
+      check(ht.last?.verse == nil && ht.last?.date == at(0, 16, 0) && hPolicy != .never, "hourly verse: asks to open the app after the last saved hour")
+      let (lateH, _) = buildVerseTimeline(now: at(0, 16, 30), data: vHour)
+      check(lateH.count == 1 && lateH[0].verse == nil, "hourly verse: never shows an old hour's verse")
+    }
+    func lockV(_ e: VerseEntry, _ f: WidgetFamily, _ size: CGSize) -> some View {
+      VerseWidgetView(entry: e, familyOverride: f)
+        .foregroundStyle(.white)
+        .frame(width: size.width, height: size.height)
+        .background(Color(white: 0.22))
+        .clipShape(RoundedRectangle(cornerRadius: f == .accessoryCircular ? size.width / 2 : 12, style: .continuous))
+    }
+    let rect = CGSize(width: 172, height: 76), circ = CGSize(width: 76, height: 76), inline = CGSize(width: 260, height: 24)
+    if let e = first("en") {
+      save(lockV(e, .accessoryRectangular, rect), rect, "28-verse-lock-rect")
+      save(lockV(e, .accessoryCircular, circ), circ, "29-verse-lock-circle")
+      save(lockV(e, .accessoryInline, inline), inline, "30-verse-lock-inline")
+    }
+    if let e = first("ur") { save(lockV(e, .accessoryRectangular, rect), rect, "31-verse-lock-rect-urdu") }
+    if let e = first("ar") { save(lockV(e, .accessoryRectangular, rect), rect, "32-verse-lock-rect-arabic") }
+    if let e = first("longEn") { save(lockV(e, .accessoryRectangular, rect), rect, "33-verse-lock-rect-longest") }
+    if let d = vHour, let e = buildVerseTimeline(now: at(0, 14, 20), data: d).0.first {
+      save(lockV(e, .accessoryCircular, circ), circ, "34-verse-lock-circle-hourly")
+      save(lockV(e, .accessoryRectangular, rect), rect, "35-verse-lock-rect-hourly")
+      save(vhome(e, .systemMedium, medium), medium, "36-verse-medium-hourly")
+    }
+    if let d = loadVerses(defaults: verseDefaults("hourAr")), let e = buildVerseTimeline(now: at(0, 14, 20), data: d).0.first {
+      save(lockV(e, .accessoryCircular, circ), circ, "37-verse-lock-circle-hourly-arabic")
+    }
     _ = fmt
     return failed
   }

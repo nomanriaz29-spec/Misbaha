@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { getTimes, PRAYER_KEYS } from './prayer';
 import { t, getLang } from '../i18n';
-import { verseFor } from './verseOfDay';
+import { verseFor, slotStart } from './verseOfDay';
 import { refreshAndroidWidgets } from '../widgets/android';
 
 // Shared with the iOS widget extension through this App Group (see app.json and targets/prayer-widget).
@@ -24,7 +24,7 @@ if (Platform.OS === 'ios') {
 //          labels: { names: [5 prayer names], next, inPrefix, open, rtl } }  (labels follow the app's language)
 export function updateWidget(settings) {
   if (Platform.OS === 'android') { refreshAndroidWidgets(settings); return; }
-  updateVerseWidget();
+  updateVerseWidget(settings);
   if (!ExtensionStorage || !settings?.location) return;
   try {
     const days = [];
@@ -50,25 +50,29 @@ export function updateWidget(settings) {
   } catch (e) {}
 }
 
-// Verse of the day widget: 30 days of verses in the app's language, so it changes every
-// midnight without the app being opened. Shape:
-// { days: [{ d: 'YYYY-MM-DD', s, a, ar, tr (null in Arabic), ref }], labels: { title, open, rtl, lang } }
+// Verse widget: the coming verses in the app's language, so it keeps changing without the app
+// being opened: 30 days ahead when it changes daily, 7 days (168 verses) when it changes hourly.
+// Shape: { days: [{ t: start (unix s), d: 'YYYY-MM-DD', s, a, ar, tr (null in Arabic), ref }],
+//          labels: { title, open, rtl, lang, every: 'day' | 'hour' } }
 let lastVerseWrite = '';
-export function updateVerseWidget() {
+export function updateVerseWidget(settings) {
   if (!ExtensionStorage) return;
   const lang = getLang();
-  const today = new Date();
-  const stamp = dayKey(today) + lang;
-  if (stamp === lastVerseWrite) return; // already written today in this language
+  const every = settings?.verseEvery === 'hour' ? 'hour' : 'day';
+  const now = new Date();
+  const first = slotStart(now, every);
+  const stamp = dayKey(now) + lang + every;
+  if (stamp === lastVerseWrite) return; // already written today with these settings
   try {
     const days = [];
-    for (let i = 0; i < DAYS; i++) {
-      const day = new Date(today);
-      day.setHours(12, 0, 0, 0);
-      day.setDate(day.getDate() + i);
-      days.push({ d: dayKey(day), ...verseFor(day, lang) });
+    const count = every === 'hour' ? 7 * 24 : DAYS;
+    for (let i = 0; i < count; i++) {
+      const at = new Date(first);
+      if (every === 'hour') at.setHours(at.getHours() + i);
+      else at.setDate(at.getDate() + i);
+      days.push({ t: Math.floor(at.getTime() / 1000), d: dayKey(at), ...verseFor(at, lang, every) });
     }
-    const labels = { title: t('widget.verseTitle'), open: t('widget.verseOpen'), rtl: lang !== 'en', lang };
+    const labels = { title: t(every === 'hour' ? 'widget.verseHourTitle' : 'widget.verseTitle'), open: t('widget.verseOpen'), rtl: lang !== 'en', lang, every };
     new ExtensionStorage(APP_GROUP).set('verses', JSON.stringify({ days, labels }));
     ExtensionStorage.reloadWidget();
     lastVerseWrite = stamp;

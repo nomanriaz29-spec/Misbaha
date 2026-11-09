@@ -33,10 +33,24 @@ function step(n) {
   return k;
 }
 
-export function verseRefFor(date) {
+// every: 'day' (changes at midnight) or 'hour' (changes on the hour). Hourly uses the same
+// list, so each verse comes back after about six days.
+export function slotFor(date, every = 'day') {
+  return every === 'hour' ? dayNumber(date) * 24 + date.getHours() : dayNumber(date);
+}
+
+export function verseRefFor(date, every = 'day') {
   const n = VERSES.length;
-  const i = (((dayNumber(date) * step(n)) % n) + n) % n;
+  const i = (((slotFor(date, every) * step(n)) % n) + n) % n;
   return VERSES[i];
+}
+
+// When the verse shown at `date` started and when it ends.
+export function slotStart(date, every = 'day') {
+  const d = new Date(date);
+  if (every === 'hour') d.setMinutes(0, 0, 0);
+  else d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 const DIACRITICS = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g;
@@ -49,8 +63,8 @@ export function verseLabel(s, a, lang) {
   return `${info.name} ${s}:${a}`;
 }
 
-export function verseFor(date, lang) {
-  const [s, a] = verseRefFor(date);
+export function verseFor(date, lang, every = 'day') {
+  const [s, a] = verseRefFor(date, every);
   const tr = lang === 'ar' ? null : translation(s, lang === 'ur' ? 'ur' : 'en')[a - 1];
   return { s, a, ar: arabic(s)[a - 1], tr, ref: verseLabel(s, a, lang) };
 }

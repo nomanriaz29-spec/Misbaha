@@ -19,7 +19,7 @@ function render(name, info, settings, now = new Date()) {
   const draw = WIDGETS[name];
   if (!draw) return null;
   const ctx = { width: info?.width, height: info?.height };
-  if (name === 'RatbVerse') ctx.v = verseModel(now);
+  if (name === 'RatbVerse') ctx.v = verseModel(now, settings?.verseEvery);
   else ctx.m = prayerModel(settings, now);
   return { light: draw({ ...ctx, c: THEMES.light }), dark: draw({ ...ctx, c: THEMES.dark }) };
 }

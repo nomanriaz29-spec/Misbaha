@@ -272,4 +272,8 @@ export default {
   'widgets.manualAndroid': 'Your launcher can’t add widgets from apps. Touch and hold an empty spot on the home screen, tap Widgets, then find Ratb.',
   'widgets.howAndroid': 'Or touch and hold an empty spot on the home screen, tap Widgets and find Ratb. Widgets refresh every 30 minutes and whenever you open the app.',
   'widgets.howIos': 'To add one, touch and hold an empty spot on the home screen, tap Edit, then Add Widget, and search for Ratb. For the lock screen, touch and hold the lock screen and tap Customize.',
+  'widget.verseHourTitle': 'Verse of the hour',
+  'widgets.verseEvery': 'Verse widget changes',
+  'widgets.every.day': 'Every day',
+  'widgets.every.hour': 'Every hour',
 };
