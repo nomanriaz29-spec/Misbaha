@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, View, Text, Pressable, DevSettings } from 'react-native';
+import { AppState, View, Text, Pressable, DevSettings, Linking } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -75,6 +75,7 @@ export default function App() {
   }, []);
 
   const ready = fontsLoaded && settings && progress && history && custom;
+  const isReady = !!ready;
   useEffect(() => { if (ready) SplashScreen.hideAsync().catch(() => {}); }, [ready]);
 
   const setProgress = useCallback((updater) => {
@@ -149,6 +150,20 @@ export default function App() {
       playSound('full', () => setAzanPlaying(false)).then((ok) => setAzanPlaying(ok));
     }
   }, [response, progress, setProgress]);
+
+  // Links from the verse-of-the-day widget: misbaha://quran/<surah>/<verse>
+  const handleUrl = useCallback((url) => {
+    const m = typeof url === 'string' && /^misbaha:\/\/quran\/(\d{1,3})(?:\/(\d{1,3}))?/.exec(url);
+    if (!m) return;
+    const s = +m[1], a = +(m[2] || 1);
+    if (s >= 1 && s <= 114 && a >= 1 && a <= 286) { setQuranSurah({ s, a }); setSheet('quran'); }
+  }, []);
+  useEffect(() => {
+    if (!isReady) return;
+    Linking.getInitialURL().then(handleUrl).catch(() => {});
+    const sub = Linking.addEventListener('url', (e) => handleUrl(e.url));
+    return () => sub.remove();
+  }, [isReady, handleUrl]);
 
   // Switching between a left-to-right and a right-to-left language needs a restart.
   const changeLanguage = async (lang) => {

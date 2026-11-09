@@ -1,10 +1,12 @@
 import { Platform } from 'react-native';
 import { getTimes, PRAYER_KEYS } from './prayer';
 import { t, getLang } from '../i18n';
+import { verseFor } from './verseOfDay';
 
 // Shared with the iOS widget extension through this App Group (see app.json and targets/prayer-widget).
 export const APP_GROUP = 'group.com.nomanriaz.misbaha';
-const DAYS = 30; // the widget keeps working for a month even if the app isn't opened
+const DAYS = 30;
+const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; // the widget keeps working for a month even if the app isn't opened
 
 let ExtensionStorage = null;
 if (Platform.OS === 'ios') {
@@ -20,6 +22,7 @@ if (Platform.OS === 'ios') {
 // Shape: { place, updated, days: [{ d: 'YYYY-MM-DD', t: [fajr, dhuhr, asr, maghrib, isha] (unix seconds) }],
 //          labels: { names: [5 prayer names], next, inPrefix, open, rtl } }  (labels follow the app's language)
 export function updateWidget(settings) {
+  updateVerseWidget();
   if (!ExtensionStorage || !settings?.location) return;
   try {
     const days = [];
@@ -42,5 +45,30 @@ export function updateWidget(settings) {
     };
     storage.set('prayers', JSON.stringify({ place: settings.location.name || '', updated: Math.floor(Date.now() / 1000), days, labels }));
     ExtensionStorage.reloadWidget();
+  } catch (e) {}
+}
+
+// Verse of the day widget: 30 days of verses in the app's language, so it changes every
+// midnight without the app being opened. Shape:
+// { days: [{ d: 'YYYY-MM-DD', s, a, ar, tr (null in Arabic), ref }], labels: { title, open, rtl, lang } }
+let lastVerseWrite = '';
+export function updateVerseWidget() {
+  if (!ExtensionStorage) return;
+  const lang = getLang();
+  const today = new Date();
+  const stamp = dayKey(today) + lang;
+  if (stamp === lastVerseWrite) return; // already written today in this language
+  try {
+    const days = [];
+    for (let i = 0; i < DAYS; i++) {
+      const day = new Date(today);
+      day.setHours(12, 0, 0, 0);
+      day.setDate(day.getDate() + i);
+      days.push({ d: dayKey(day), ...verseFor(day, lang) });
+    }
+    const labels = { title: t('widget.verseTitle'), open: t('widget.verseOpen'), rtl: lang !== 'en', lang };
+    new ExtensionStorage(APP_GROUP).set('verses', JSON.stringify({ days, labels }));
+    ExtensionStorage.reloadWidget();
+    lastVerseWrite = stamp;
   } catch (e) {}
 }

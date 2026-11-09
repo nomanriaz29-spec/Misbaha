@@ -255,4 +255,6 @@ export default {
   'widget.next': 'Next',
   'widget.in': 'in',
   'widget.open': 'Open Ratb to set your location',
+  'widget.verseTitle': 'Verse of the day',
+  'widget.verseOpen': "Open Ratb to load today's verse",
 };

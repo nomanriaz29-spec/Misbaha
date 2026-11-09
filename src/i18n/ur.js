@@ -250,4 +250,6 @@ export default {
   'widget.next': 'اگلی نماز',
   'widget.in': 'باقی وقت',
   'widget.open': 'مقام طے کرنے کے لیے رطب کھولیں',
+  'widget.verseTitle': 'آج کی آیت',
+  'widget.verseOpen': "آج کی آیت کے لیے رطب کھولیں",
 };

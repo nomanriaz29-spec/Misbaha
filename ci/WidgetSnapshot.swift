@@ -128,6 +128,68 @@ struct WidgetSnapshot {
       save(home(e, .systemMedium, medium), medium, "9-medium-arabic")
       save(lock(e, .accessoryRectangular, CGSize(width: 172, height: 76)), CGSize(width: 172, height: 76), "10-lock-arabic")
     }
+
+    // --- Verse of the day -----------------------------------------------------
+    func verseDefaults(_ key: String) -> UserDefaults {
+      let d = UserDefaults(suiteName: "verse-test-\(key)")!
+      var json = verseFixtures[key]!
+      for i in 0..<3 { json = json.replacingOccurrences(of: "DAY\(i)", with: verseDayKey(at(i, 12, 0))) }
+      d.set(json, forKey: "verses")
+      return d
+    }
+    let vEn = loadVerses(defaults: verseDefaults("en"))
+    let vUr = loadVerses(defaults: verseDefaults("ur"))
+    let vAr = loadVerses(defaults: verseDefaults("ar"))
+    check(vEn?.verses.count == 3 && vEn?.labels.title == "Verse of the day" && vEn?.labels.rtl == false, "verse: reads 3 days and English labels")
+    check(vUr?.labels.rtl == true && vUr?.verses.first?.translation?.isEmpty == false, "verse: reads the Urdu translation")
+    check(vAr?.labels.lang == "ar" && vAr?.verses.first?.translation == nil, "verse: Arabic shows the verse without a translation")
+    let brokenV = UserDefaults(suiteName: "verse-test-broken")!
+    brokenV.set("{not json", forKey: "verses")
+    check(loadVerses(defaults: brokenV) == nil, "verse: broken data is ignored")
+    brokenV.set(#"{"days":[{"d":"x","s":999,"a":1,"ar":"x","ref":"x"}]}"#, forKey: "verses")
+    check(loadVerses(defaults: brokenV) == nil, "verse: impossible surah numbers are rejected")
+    if let vEn {
+      let (vt, vPolicy) = buildVerseTimeline(now: at(0, 14, 0), data: vEn)
+      check(vt.count == 4, "verse: one entry per saved day plus an end entry (got \(vt.count))")
+      check(vt[0].verse?.day == verseDayKey(at(0, 12, 0)), "verse: shows today's verse")
+      check(vt.count > 1 && vt[1].date == cal.startOfDay(for: at(1, 0, 0)) && vt[1].verse?.day == verseDayKey(at(1, 12, 0)), "verse: switches to the next verse at midnight")
+      check(vt[0].verse != vt[1].verse, "verse: a different verse each day")
+      check(vt.last?.verse == nil && vPolicy != .never && vPolicy != .atEnd, "verse: when the days run out it asks to open the app and retries")
+      let (lateV, _) = buildVerseTimeline(now: at(5, 9, 0), data: vEn)
+      check(lateV.count == 1 && lateV[0].verse == nil, "verse: old data is not shown on the wrong day")
+    }
+    let (noneV, _) = buildVerseTimeline(now: Date(), data: nil)
+    check(noneV.count == 1 && noneV[0].verse == nil, "verse: no data shows the open-the-app message")
+
+    func vhome(_ e: VerseEntry, _ f: WidgetFamily, _ size: CGSize) -> some View {
+      VerseWidgetView(entry: e, familyOverride: f)
+        .padding(16)
+        .frame(width: size.width, height: size.height)
+        .background(homeBg)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+    let large = CGSize(width: 364, height: 382)
+    func first(_ key: String) -> VerseEntry? {
+      loadVerses(defaults: verseDefaults(key)).map { buildVerseTimeline(now: at(0, 14, 0), data: $0).0[0] }
+    }
+    if let e = first("en") {
+      save(vhome(e, .systemSmall, small), small, "11-verse-small")
+      save(vhome(e, .systemMedium, medium), medium, "12-verse-medium")
+      save(vhome(e, .systemLarge, large), large, "13-verse-large")
+      save(VerseWidgetView(entry: e, familyOverride: .accessoryRectangular).foregroundStyle(.white)
+        .frame(width: 172, height: 76).background(Color(white: 0.22))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous)), CGSize(width: 172, height: 76), "14-verse-lock")
+    }
+    if let e = first("ur") { save(vhome(e, .systemMedium, medium), medium, "15-verse-medium-urdu") }
+    if let e = first("ar") { save(vhome(e, .systemMedium, medium), medium, "16-verse-medium-arabic") }
+    if let e = first("longEn") {
+      save(vhome(e, .systemMedium, medium), medium, "17-verse-medium-longest")
+      save(vhome(e, .systemLarge, large), large, "18-verse-large-longest")
+      save(vhome(e, .systemSmall, small), small, "19-verse-small-longest")
+    }
+    if let e = first("longUr") { save(vhome(e, .systemMedium, medium), medium, "20-verse-medium-longest-urdu") }
+    save(vhome(noneV[0], .systemMedium, medium), medium, "21-verse-no-data")
+    save(vhome(VerseEntry(date: Date(), verse: sampleVerse), .systemSmall, small), small, "22-verse-gallery")
     _ = fmt
     return failed
   }

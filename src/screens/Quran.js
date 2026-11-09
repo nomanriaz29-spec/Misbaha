@@ -19,7 +19,15 @@ export default function Quran({ visible, onClose, openSurah, theme }) {
   const startAyah = useRef(1);
 
   useEffect(() => { if (visible && !state) loadQuranState().then(setState); }, [visible]);
-  useEffect(() => { if (visible && openSurah) { startAyah.current = 1; setSurah(openSurah); } }, [visible, openSurah]);
+  // openSurah: a surah number, or { s, a } to open at a verse (from the verse-of-the-day widget).
+  useEffect(() => {
+    if (!visible || !openSurah) return;
+    const s = typeof openSurah === 'number' ? openSurah : openSurah.s;
+    startAyah.current = typeof openSurah === 'number' ? 1 : openSurah.a || 1;
+    setSelected(null);
+    setSurah(null); // remount the reader so it scrolls even when the same surah is already open
+    setTimeout(() => setSurah(s), 0);
+  }, [visible, openSurah]);
   useEffect(() => { if (!visible) { setSelected(null); setQuery(''); } }, [visible]);
 
   const update = useCallback((patch) => {

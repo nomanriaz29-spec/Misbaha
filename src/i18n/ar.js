@@ -250,4 +250,6 @@ export default {
   'widget.next': 'الصلاة القادمة',
   'widget.in': 'بعد',
   'widget.open': 'افتح رطب لتحديد موقعك',
+  'widget.verseTitle': 'آية اليوم',
+  'widget.verseOpen': "افتح رطب لتحميل آية اليوم",
 };

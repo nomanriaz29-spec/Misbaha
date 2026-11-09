@@ -44,7 +44,7 @@ jobs:
           mkdir -p build out
           xcrun --sdk iphonesimulator swiftc -parse-as-library \
             -target arm64-apple-ios17.0-simulator \
-            targets/prayer-widget/PrayerTimesWidget.swift ci/WidgetSnapshot.swift \
+            targets/prayer-widget/PrayerTimesWidget.swift targets/prayer-widget/VerseWidget.swift ci/VerseFixtures.swift ci/WidgetSnapshot.swift \
             -o build/widget-snapshot
 
       - name: Run widget tests on a simulator
