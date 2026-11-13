@@ -6,7 +6,6 @@ on:
   push:
     paths:
       - 'targets/**'
-      - 'watch/**'
       - 'ci/**'
       - '.github/workflows/ios-check.yml'
   workflow_dispatch:
@@ -33,11 +32,10 @@ jobs:
             targets/prayer-widget/*.swift
 
       - name: Typecheck Apple Watch app
-        if: hashFiles('watch/*.swift') != ''
         run: |
           xcrun --sdk watchsimulator swiftc -typecheck \
             -target arm64-apple-watchos10.0-simulator \
-            watch/*.swift
+            targets/watch/*.swift
 
       - name: Build widget test harness
         run: |
@@ -58,6 +56,55 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           SIMCTL_CHILD_TZ=Asia/Dubai xcrun simctl spawn "$UDID" "$PWD/build/widget-snapshot" "$PWD/out" | tee out/results.txt
           exit ${PIPESTATUS[0]}
+
+      - name: Apple Watch screenshots
+        if: always()
+        run: |
+          set -e
+          APP=build/RatbWatchShots.app
+          mkdir -p "$APP" out/watch
+          FILES=$(ls targets/watch/*.swift | grep -v RatbWatchApp.swift)
+          xcrun --sdk watchsimulator swiftc -parse-as-library \
+            -target arm64-apple-watchos10.0-simulator \
+            $FILES ci/WatchShots.swift -o "$APP/RatbWatchShots"
+          cat > "$APP/Info.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>CFBundleIdentifier</key><string>com.nomanriaz.misbaha.watchshots</string>
+            <key>CFBundleExecutable</key><string>RatbWatchShots</string>
+            <key>CFBundleName</key><string>Ratb</string>
+            <key>CFBundleDisplayName</key><string>Ratb</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleShortVersionString</key><string>1.1.0</string>
+            <key>CFBundleVersion</key><string>1</string>
+            <key>MinimumOSVersion</key><string>10.0</string>
+            <key>CFBundleSupportedPlatforms</key><array><string>WatchSimulator</string></array>
+            <key>UIDeviceFamily</key><array><integer>4</integer></array>
+            <key>WKApplication</key><true/>
+            <key>WKWatchOnly</key><true/>
+          </dict></plist>
+          PLIST
+          codesign -s - --force "$APP"
+          # Largest watch simulator available (Ultra first): its screenshots are an App Store size.
+          WUDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)['devices']
+          w = [x for k, v in d.items() if 'watchOS' in k for x in v]
+          w.sort(key=lambda x: (('Ultra' not in x['name']), ('mm' not in x['name']), x['name']), reverse=False)
+          print(w[0]['udid'], file=sys.stdout); print('Watch simulator:', w[0]['name'], file=sys.stderr)")
+          xcrun simctl boot "$WUDID" || true
+          xcrun simctl bootstatus "$WUDID" -b
+          xcrun simctl status_bar "$WUDID" override --time "9:41" || true
+          xcrun simctl install "$WUDID" "$APP"
+          for SHOT in list counter routine; do
+            SIMCTL_CHILD_SHOT=$SHOT xcrun simctl launch "$WUDID" com.nomanriaz.misbaha.watchshots
+            sleep 6
+            xcrun simctl io "$WUDID" screenshot "out/watch/$SHOT.png"
+            xcrun simctl terminate "$WUDID" com.nomanriaz.misbaha.watchshots || true
+            sleep 1
+          done
+          sips -g pixelWidth -g pixelHeight out/watch/*.png
 
       - name: Save snapshots to the ci-widget-snapshots branch
         if: always()
