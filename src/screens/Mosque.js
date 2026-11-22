@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, TextInput, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, TextInput, ActivityIndicator, StyleSheet, Share } from 'react-native';
 import Sheet, { Group } from '../components/Sheet';
 import { FONTS } from '../theme';
 import { t, getLang } from '../i18n';
 import { getTimes, fmtTime } from '../lib/prayer';
+import { shareMessage, findTimetable } from '../lib/timetable';
 import { findMosques, cleanMosque, DEFAULT_JAMAAT, JAMAAT_KEYS, REMIND_OPTIONS, jamaatTimes, shiftTime, hhmm } from '../lib/mosque';
 
 // Pick the nearest mosque (OpenStreetMap) and set its jamaat times once.
-export default function Mosque({ visible, onClose, settings, update, theme }) {
+export default function Mosque({ visible, onClose, settings, update, incoming, onIncomingDone, theme }) {
   const saved = settings.mosque;
   const [view, setView] = useState(saved ? 'edit' : 'find');
   const [state, setState] = useState({ busy: false, list: null, error: '' });
   const [draft, setDraft] = useState(saved);
   const [manual, setManual] = useState('');
+  const [paste, setPaste] = useState('');
+  const [note, setNote] = useState('');
 
   useEffect(() => {
-    if (visible) { setDraft(settings.mosque); setView(settings.mosque ? 'edit' : 'find'); }
+    if (visible) { setDraft(settings.mosque); setView(settings.mosque ? 'edit' : 'find'); setNote(''); setPaste(''); }
   }, [visible]);
 
   const search = async () => {
@@ -45,12 +48,45 @@ export default function Mosque({ visible, onClose, settings, update, theme }) {
 
   const setJ = (k, j) => save({ jamaat: { ...draft.jamaat, [k]: j } });
 
+  // A timetable someone shared: keep this user's own reminder setting.
+  const applyTimetable = (m) => {
+    const next = cleanMosque({ ...m, remind: draft?.remind || settings.mosque?.remind || 0 });
+    if (!next) return;
+    setDraft(next);
+    update({ mosque: next });
+    setView('edit');
+    setNote(t('share.done', { name: next.name }));
+  };
+  const importPasted = () => {
+    const m = findTimetable(paste);
+    if (!m) { setNote(t('share.bad')); return; }
+    setPaste('');
+    applyTimetable(m);
+  };
+  const share = () => {
+    const message = shareMessage(draft, settings);
+    if (message) Share.share({ message }).catch(() => {});
+  };
+
   const now = new Date();
   const azan = settings.location ? getTimes(settings.location, settings, now) : null;
   const jt = draft && settings.location ? jamaatTimes({ ...settings, mosque: draft }, now) : null;
 
   return (
     <Sheet visible={visible} title={t('mosque.title')} onClose={onClose} theme={theme}>
+      {incoming ? (
+        <View style={[styles.card, { backgroundColor: theme.brassSoft, borderColor: theme.brass }]}>
+          <T theme={theme} style={{ fontFamily: FONTS.uiBold, fontSize: 17 }}>{t('share.incomingTitle')}</T>
+          <T theme={theme} style={{ fontSize: 15, lineHeight: 21 }}>{t('share.incomingBody', { name: incoming.name })}</T>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable onPress={() => { applyTimetable(incoming); onIncomingDone?.(); }} style={[styles.primary, { backgroundColor: theme.brass, flex: 1 }]}>
+              <Text style={{ color: theme.bg, fontFamily: FONTS.uiBold, fontSize: 16 }}>{t('share.use')}</Text>
+            </Pressable>
+            <Pill theme={theme} label={t('share.cancel')} on={false} onPress={() => onIncomingDone?.()} />
+          </View>
+        </View>
+      ) : null}
+      {note ? <T theme={theme} style={{ color: theme.brass, fontSize: 15 }}>{note}</T> : null}
       {view === 'find' || !draft ? (
         <>
           <Group theme={theme}>
@@ -83,6 +119,13 @@ export default function Mosque({ visible, onClose, settings, update, theme }) {
               <TextInput value={manual} onChangeText={setManual} placeholder={t('mosque.namePh')} placeholderTextColor={theme.muted} maxLength={80}
                 style={[styles.input, { color: theme.fg, borderColor: theme.line, flex: 1 }]} />
               <Pill theme={theme} label={t('common.choose')} on={false} onPress={() => manual.trim() && choose({ name: manual.trim(), osm: '' })} />
+            </Row>
+          </Group>
+          <Group label={t('share.importTitle')} theme={theme}>
+            <Row theme={theme} first style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+              <TextInput value={paste} onChangeText={setPaste} placeholder={t('share.importPh')} placeholderTextColor={theme.muted} multiline
+                autoCorrect={false} autoCapitalize="none" style={[styles.input, { color: theme.fg, borderColor: theme.line, minHeight: 70, textAlignVertical: 'top' }]} />
+              <Pill theme={theme} label={t('share.import')} on={!!paste.trim()} onPress={() => paste.trim() && importPasted()} />
             </Row>
           </Group>
           {draft ? <Pill theme={theme} label={t('common.close')} on={false} onPress={() => setView('edit')} /> : null}
@@ -144,6 +187,15 @@ export default function Mosque({ visible, onClose, settings, update, theme }) {
             </Row>
           </Group>
 
+          <Group theme={theme}>
+            <Row theme={theme} first style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+              <T theme={theme} style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>{t('share.sub')}</T>
+              <Pressable onPress={share} accessibilityRole="button" style={[styles.primary, { backgroundColor: theme.brass }]}>
+                <Text style={{ color: theme.bg, fontFamily: FONTS.uiBold, fontSize: 16 }}>{t('share.button')}</Text>
+              </Pressable>
+            </Row>
+          </Group>
+
           <Pressable onPress={() => { update({ mosque: null }); setDraft(null); setView('find'); }} style={[styles.remove, { borderColor: theme.line }]}>
             <Text style={{ color: theme.muted, fontFamily: FONTS.ui, fontSize: 15 }}>{t('mosque.remove')}</Text>
           </Pressable>
@@ -178,12 +230,13 @@ function Step({ theme, onMinus, onPlus, value, label }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
   primary: { borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   pill: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   pillSmall: { paddingHorizontal: 11, paddingVertical: 7, borderRadius: 10 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stepBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
+  card: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 10 },
   remove: { borderWidth: 1, borderRadius: 14, paddingVertical: 13, alignItems: 'center', marginBottom: 20 },
 });

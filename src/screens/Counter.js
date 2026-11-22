@@ -27,7 +27,7 @@ const until = (ms) => {
   return m >= 60 ? t('time.hm', { h: Math.floor(m / 60), m: m % 60 }) : t('time.m', { m });
 };
 
-export default function Counter({ theme, progress, setProgress, settings, next, onChoose, onOpenLibrary, onOpenDuas, onOpenSchedule, onOpenQibla, onOpenHistory, onOpenQuran }) {
+export default function Counter({ theme, progress, setProgress, settings, next, jamaat, onOpenMosque, onHideMosqueHint, onChoose, onOpenLibrary, onOpenDuas, onOpenSchedule, onOpenQibla, onOpenHistory, onOpenQuran }) {
   useKeepAwake();
   const { width, height } = useWindowDimensions();
   const ringSize = Math.min(width * 0.74, 290, height * 0.32);
@@ -136,6 +136,30 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
         </View>
       </View>
 
+      {jamaat ? (
+        <Pressable onPress={onOpenMosque} accessibilityRole="button" style={({ pressed }) => [styles.jamaat, { backgroundColor: theme.surface, borderColor: theme.line }, pressed && { opacity: 0.6 }]}>
+          <Text style={{ fontSize: 18 }}>🕌</Text>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={[styles.jamaatT, { color: theme.fg }]}>
+              {t('jamaatCard.next', { prayer: jamaat.prayer, time: fmtTime(jamaat.at) })}
+              <Text style={{ color: theme.brass }}>{'  ' + (jamaat.at - now <= 60000 ? t('jamaatCard.now') : t('jamaatCard.in', { in: until(jamaat.at - now) }))}</Text>
+            </Text>
+            <Text numberOfLines={1} style={[styles.small, { color: theme.muted, fontSize: 13 }]}>{jamaat.mosque}</Text>
+          </View>
+        </Pressable>
+      ) : settings.mosqueHint !== false && onOpenMosque ? (
+        <View style={[styles.jamaat, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <Text style={{ fontSize: 18 }}>🕌</Text>
+          <Pressable onPress={onOpenMosque} accessibilityRole="button" style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={[styles.jamaatT, { color: theme.fg }]}>{t('jamaatCard.setTitle')}</Text>
+            <Text numberOfLines={1} style={[styles.small, { color: theme.muted, fontSize: 13 }]}>{t('jamaatCard.setSub')}</Text>
+          </Pressable>
+          <Pressable onPress={onHideMosqueHint} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('jamaatCard.hide')}>
+            <Text style={{ color: theme.muted, fontSize: 16 }}>✕</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {ramadan && (
         <View style={[styles.ramadan, { backgroundColor: theme.brassSoft, borderColor: theme.brass }]}>
           <Text style={[styles.ramadanTxt, { color: theme.fg }]} numberOfLines={2}>☾  {ramadan}</Text>
@@ -243,6 +267,8 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, flexShrink: 1 },
   iconBtn: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 7, height: 7, borderRadius: 4 },
+  jamaat: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1 },
+  jamaatT: { fontFamily: FONTS.uiBold, fontSize: 15 },
   ramadan: { marginTop: 10, paddingVertical: 9, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1 },
   ramadanTxt: { fontFamily: FONTS.uiBold, fontSize: 15, textAlign: 'center' },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },

@@ -32,6 +32,10 @@ import Duas from './src/screens/Duas';
 import History from './src/screens/History';
 import Quran from './src/screens/Quran';
 import Mosque from './src/screens/Mosque';
+import Qada from './src/screens/Qada';
+import { loadQada, saveQada } from './src/lib/qada';
+import { findTimetable } from './src/lib/timetable';
+import { jamaatTimes } from './src/lib/mosque';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -50,6 +54,9 @@ export default function App() {
   const [history, setHistory] = useState(null);
   const [salah, setSalah] = useState(null); // prayer tracker
   const [custom, setCustom] = useState(null);
+  const [qada, setQadaState] = useState(null); // make-up prayers
+  const [mosqueFrom, setMosqueFrom] = useState(null); // sheet to return to when My mosque closes
+  const [incoming, setIncoming] = useState(null); // a shared mosque timetable waiting to be confirmed
   const [notifOn, setNotifOn] = useState(false);
   const [sheet, setSheet] = useState(null); // 'lib' | 'sched' | 'duas' | 'qibla' | 'history' | 'quran' | 'edit'
   const [editing, setEditing] = useState(null); // custom dhikr being edited, or 'new'
@@ -66,7 +73,8 @@ export default function App() {
   // Load saved state.
   useEffect(() => {
     (async () => {
-      const [s, cu, p, h, sl] = await Promise.all([loadSettings(), loadCustom(), loadProgress(), loadHistory(), loadSalah()]);
+      const [s, cu, p, h, sl, qd] = await Promise.all([loadSettings(), loadCustom(), loadProgress(), loadHistory(), loadSalah(), loadQada()]);
+      setQadaState(qd);
       setCustomRegistry(cu);
       const lang = applyLang(s.lang);
       if (needsDirectionChange(lang)) setDirection(lang); // applies from the next launch
@@ -81,7 +89,7 @@ export default function App() {
     })();
   }, []);
 
-  const ready = fontsLoaded && settings && progress && history && custom && salah;
+  const ready = fontsLoaded && settings && progress && history && custom && salah && qada;
   const isReady = !!ready;
   useEffect(() => { if (ready) SplashScreen.hideAsync().catch(() => {}); }, [ready]);
 
@@ -154,6 +162,8 @@ export default function App() {
   }, []);
 
   const openQuran = (surah) => { setQuranSurah(surah || null); setSheet('quran'); };
+  const openMosque = (from = null) => { setMosqueFrom(from); setSheet('mosque'); };
+  const setQada = useCallback((q) => { setQadaState(q); saveQada(q); }, []);
 
   // Tapping a notification opens the matching routine, dua or surah.
   const response = Notifications.useLastNotificationResponse();
@@ -178,6 +188,12 @@ export default function App() {
 
   // Links from the widgets: misbaha://quran/<surah>/<verse> and misbaha://prayers
   const handleUrl = useCallback((url) => {
+    // A shared mosque timetable: misbaha://mosque/RATB1.<code>
+    if (typeof url === 'string' && /^misbaha:\/\/mosque\//.test(url)) {
+      const m = findTimetable(url);
+      if (m) { setIncoming(m); setMosqueFrom(null); setSheet('mosque'); }
+      return;
+    }
     if (typeof url === 'string' && /^misbaha:\/\/prayers\b/.test(url)) { setSheet('sched'); return; }
     if (typeof url === 'string' && /^misbaha:\/\/salah\b/.test(url)) { setSheet('history'); return; }
     const m = typeof url === 'string' && /^misbaha:\/\/quran\/(\d{1,3})(?:\/(\d{1,3}))?/.exec(url);
@@ -227,7 +243,7 @@ export default function App() {
     return (
       <SafeAreaProvider>
         <StatusBar style={theme.dark ? 'light' : 'dark'} />
-        <Onboarding theme={theme} onDone={(patch, granted) => { setNotifOn(granted); update(patch); registerBackgroundRefresh(); }} />
+        <Onboarding theme={theme} onDone={(patch, granted, wantsMosque) => { setNotifOn(granted); update(patch); registerBackgroundRefresh(); if (wantsMosque) openMosque(null); }} />
       </SafeAreaProvider>
     );
   }
@@ -235,6 +251,20 @@ export default function App() {
   const plan = buildPlan(settings);
   const now = Date.now();
   const next = plan.find((x) => x.at.getTime() > now) || null;
+  // Next jamaat at the user's mosque (today, or tomorrow's Fajr after Isha).
+  let jamaat = null;
+  if (settings.mosque) {
+    const d = new Date();
+    const jt = jamaatTimes(settings, d);
+    let k = jt && ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].find((p) => jt[p].getTime() > now - 60000);
+    let at = k ? jt[k] : null, friday = jt?.isJumuah;
+    if (jt && !k) {
+      const tm = new Date(d); tm.setDate(tm.getDate() + 1);
+      const jn = jamaatTimes(settings, tm);
+      k = 'fajr'; at = jn.fajr; friday = jn.isJumuah;
+    }
+    if (at) jamaat = { prayer: t(k === 'dhuhr' && friday ? 'jamaat.jumuah' : 'prayer.' + k), at, mosque: settings.mosque.name };
+  }
   const choose = (key) => { if (!isOpenableKey(key)) return; setProgress((cur) => ({ ...cur, cur: key })); setSheet(null); };
 
   return (
@@ -246,6 +276,9 @@ export default function App() {
         setProgress={setProgress}
         settings={settings}
         next={next}
+        jamaat={jamaat}
+        onOpenMosque={() => openMosque(null)}
+        onHideMosqueHint={() => update({ mosqueHint: false })}
         onOpenLibrary={() => setSheet('lib')}
         onChoose={choose}
         onOpenDuas={() => setSheet('duas')}
@@ -264,10 +297,11 @@ export default function App() {
           <Text style={{ color: theme.bg, fontFamily: FONTS.ui, fontSize: 15 }}>{azanPlaying ? t('azan.stop') : '✕'}</Text>
         </Pressable>
       )}
-      <History visible={sheet === 'history'} onClose={() => setSheet(null)} history={history} salah={salah} onToggleSalah={toggleSalah} settings={settings} theme={theme} />
+      <History visible={sheet === 'history'} onClose={() => setSheet(null)} history={history} salah={salah} onToggleSalah={toggleSalah} settings={settings} qada={qada} onOpenQada={() => setSheet('qada')} theme={theme} />
+      <Qada visible={sheet === 'qada'} onClose={() => setSheet('history')} qada={qada} setQada={setQada} settings={settings} theme={theme} />
       <Duas visible={sheet === 'duas'} onClose={() => setSheet(null)} onChoose={choose} theme={theme} />
       <Qibla visible={sheet === 'qibla'} onClose={() => setSheet(null)} settings={settings} theme={theme} />
-      <Mosque visible={sheet === 'mosque'} onClose={() => setSheet('sched')} settings={settings} update={update} theme={theme} />
+      <Mosque visible={sheet === 'mosque'} onClose={() => { setIncoming(null); setSheet(mosqueFrom); }} settings={settings} update={update} incoming={incoming} onIncomingDone={() => setIncoming(null)} theme={theme} />
       <Quran visible={sheet === 'quran'} onClose={() => setSheet(null)} openSurah={quranSurah} theme={theme} />
       <Library
         visible={sheet === 'lib'}
@@ -296,7 +330,7 @@ export default function App() {
         notifOn={notifOn}
         onEnableNotifs={async () => { const g = await requestNotificationPermission(); setNotifOn(g); if (g) rescheduleAll(settings); }}
         onLanguage={changeLanguage}
-        onOpenMosque={() => setSheet('mosque')}
+        onOpenMosque={() => openMosque('sched')}
         salah={salah}
         onToggleSalah={toggleSalah}
         theme={theme}

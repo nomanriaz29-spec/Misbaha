@@ -24,6 +24,7 @@ export const DEFAULT_SETTINGS = {
   whiteDays: true, // reminder before the 13th-15th of each Hijri month
   ramadan: true, // suhoor reminders and iftar countdown in Ramadan
   verseEvery: 'day', // verse widget changes every 'day' or every 'hour'
+  mosqueHint: true, // show the "Set your mosque" card on the counter until set or hidden
   mosque: null, // { name, osm, lat, lng, jamaat: { fajr: { mode: 'after', min } | { mode: 'fixed', time } ... }, remind }
 };
 const OFFSETS = [5, 10, 15, 20, 30];
@@ -81,6 +82,7 @@ function cleanSettings(s) {
     whiteDays: s.whiteDays !== false,
     ramadan: s.ramadan !== false,
     verseEvery: s.verseEvery === 'hour' ? 'hour' : 'day',
+    mosqueHint: s.mosqueHint !== false,
     mosque: cleanMosque(s.mosque),
   };
 }

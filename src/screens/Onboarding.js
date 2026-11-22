@@ -9,7 +9,8 @@ import { FONTS } from '../theme';
 import { t } from '../i18n';
 
 export default function Onboarding({ theme, onDone }) {
-  const [step, setStep] = useState('location'); // location | cities | notify
+  const [step, setStep] = useState('location'); // location | cities | notify | mosque
+  const [granted, setGranted] = useState(false);
   const [loc, setLoc] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -24,10 +25,13 @@ export default function Onboarding({ theme, onDone }) {
     setBusy(false);
   };
 
-  const finish = async (askNotif) => {
-    let granted = false;
-    if (askNotif) { setBusy(true); granted = await requestNotificationPermission(); setBusy(false); }
-    onDone({ location: { ...loc, at: Date.now() }, ...defaultsForCountry(loc.country), methodAuto: true, onboarded: true }, granted);
+  const notify = async (askNotif) => {
+    if (askNotif) { setBusy(true); setGranted(await requestNotificationPermission()); setBusy(false); }
+    setStep('mosque');
+  };
+  // openMosque: go straight to "My mosque" once the app opens.
+  const finish = (openMosque) => {
+    onDone({ location: { ...loc, at: Date.now() }, ...defaultsForCountry(loc.country), methodAuto: true, onboarded: true }, granted, openMosque);
   };
 
   const Primary = ({ label, onPress }) => (
@@ -58,7 +62,7 @@ export default function Onboarding({ theme, onDone }) {
         </View>
       ) : (
         <View style={styles.center}>
-          <BeadRing size={170} n={33} filled={step === 'notify' ? 33 : 11} theme={theme} />
+          <BeadRing size={170} n={33} filled={step === 'mosque' ? 33 : step === 'notify' ? 22 : 11} theme={theme} />
           <Text style={[styles.ar, { color: theme.fg }]}>سُبْحَانَ اللَّهِ</Text>
           {step === 'location' ? (
             <>
@@ -70,13 +74,22 @@ export default function Onboarding({ theme, onDone }) {
                 <Secondary label={t('onb.cityInstead')} onPress={() => setStep('cities')} />
               </View>
             </>
+          ) : step === 'mosque' ? (
+            <>
+              <Text style={[styles.h, { color: theme.fg }]}>{t('onb.mosqueTitle')}</Text>
+              <Text style={[styles.p, { color: theme.muted }]}>{t('onb.mosqueBody')}</Text>
+              <View style={styles.actions}>
+                <Primary label={t('onb.mosqueFind')} onPress={() => finish(true)} />
+                <Secondary label={t('onb.mosqueLater')} onPress={() => finish(false)} />
+              </View>
+            </>
           ) : (
             <>
               <Text style={[styles.h, { color: theme.fg }]}>{t('onb.notifTitle')}</Text>
               <Text style={[styles.p, { color: theme.muted }]}>{t('onb.notifBody', { place: loc?.name || '' })}</Text>
               <View style={styles.actions}>
-                <Primary label={t('onb.turnOn')} onPress={() => finish(true)} />
-                <Secondary label={t('onb.notNow')} onPress={() => finish(false)} />
+                <Primary label={t('onb.turnOn')} onPress={() => notify(true)} />
+                <Secondary label={t('onb.notNow')} onPress={() => notify(false)} />
               </View>
             </>
           )}

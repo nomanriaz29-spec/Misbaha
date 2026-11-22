@@ -5,6 +5,7 @@ import { dateKey, stats } from '../lib/history';
 import { labelFor, setName } from '../lib/recommend';
 import { t } from '../i18n';
 import SalahCard from '../components/SalahCard';
+import { totals } from '../lib/qada';
 import { SETS } from '../data/adhkar';
 import { FONTS, FILL } from '../theme';
 
@@ -16,7 +17,8 @@ const DAYS = () => t('cal.days').split(','); // Sunday first
 const level = (n) => (n <= 0 ? 0 : n < 100 ? 1 : n < 300 ? 2 : 3);
 const LEVEL_OPACITY = [0, 0.28, 0.55, 0.9];
 
-export default function History({ visible, onClose, history, salah, onToggleSalah, settings, theme }) {
+export default function History({ visible, onClose, history, salah, onToggleSalah, settings, qada, onOpenQada, theme }) {
+  const qt = qada ? totals(qada) : null;
   const today = new Date();
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [sel, setSel] = useState(dateKey(today));
@@ -98,6 +100,17 @@ export default function History({ visible, onClose, history, salah, onToggleSala
         </View>
 
         {salah ? <SalahCard salah={salah} day={sel} onToggle={onToggleSalah} settings={settings} theme={theme} showStats={isToday} /> : null}
+        {onOpenQada && qt ? (
+          <Pressable onPress={onOpenQada} accessibilityRole="button" style={({ pressed }) => [styles.row, styles.qada, { backgroundColor: theme.surface, borderColor: theme.line }, pressed && { opacity: 0.6 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: theme.fg, fontFamily: FONTS.uiBold, fontSize: 16 }}>{t('qada.entry')}</Text>
+              <Text style={{ color: theme.muted, fontFamily: FONTS.ui, fontSize: 13.5 }}>
+                {qt.active ? (qt.left ? t('qada.entrySub', { n: qt.left.toLocaleString(), today: qt.today }) : '✓ ' + t('qada.allDone')) : t('qada.entryOff')}
+              </Text>
+            </View>
+            <Text style={{ color: theme.brass, fontSize: 22 }}>›</Text>
+          </Pressable>
+        ) : null}
 
         <Group label={t('library.routines')} theme={theme}>
           {Object.entries(SETS).map(([id, set], i) => {
@@ -166,6 +179,7 @@ const styles = StyleSheet.create({
   dayTitle: { fontFamily: FONTS.numMed, fontSize: 21.5 },
   dayTotal: { fontFamily: FONTS.numMed, fontSize: 21.5, fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
+  qada: { borderWidth: 1, borderRadius: 18 },
   rowT: { fontFamily: FONTS.ui, fontSize: 17 },
   rowV: { fontFamily: FONTS.uiBold, fontSize: 16, fontVariant: ['tabular-nums'] },
   empty: { fontFamily: FONTS.ui, fontSize: 15, lineHeight: 21.5, textAlign: 'center' },
