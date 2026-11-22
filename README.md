@@ -36,7 +36,7 @@ One codebase for **Android and iOS**, built with Expo (SDK 58, React Native 0.88
 - **Islamic calendar.** The Hijri date sits under the counter (Umm al-Qura, adjustable ±2 days for local moon sighting). Optional reminders: **Friday** Surah al-Kahf and salawat at 10:00 (tapping opens al-Kahf), **white days** the evening before the 13th of each Hijri month, and **Ramadan mode**, which shows the iftar or suhoor countdown on the counter and sends a suhoor reminder 30 minutes before Fajr.
 - **Pocket mode** for counting without looking: a black full-screen counter where any tap counts, with a tap vibration on each count, a long double buzz every 33 and a success buzz at the target. Press and hold to leave. (Counting with the volume buttons isn't allowed on iPhone by App Store rule 2.5.9, so this is the alternative.)
 - **English, Arabic and Urdu** (Prayers → Language, or follow the phone). Arabic and Urdu switch the whole layout to right-to-left, and the app restarts once to apply it. Notifications, routines, duas and the widget follow the chosen language.
-- **Apple Watch app** (in `targets/watch/`, part of the iPhone app from version 1.1). Tap or turn the Digital Crown to count, with haptics; the routines step through on their own.
+- **Apple Watch app** (in `targets/watch/`, part of the iPhone app). Tap or turn the Digital Crown to count, with haptics; the routines step through on their own.
 - Light and dark mode follow the phone.
 
 ## Project layout
@@ -156,12 +156,12 @@ To test with friends instead, build with `npm run build:ios` and send it to **Te
 
 ## Apple Watch
 
-The watch app's code is in `targets/watch/` and ships inside the iPhone app from version 1.1. Every push compiles it for watchOS 10 on GitHub and takes App Store screenshots of it on a watch simulator (`ci/WatchShots.swift`; the PNGs land in `watch/` on the `ci-widget-snapshots` branch).
+The watch app's code is in `targets/watch/` and ships inside the iPhone app. Every push compiles it for watchOS 10 on GitHub and takes App Store screenshots of it on a watch simulator (`ci/WatchShots.swift`; the PNGs land in `watch/` on the `ci-widget-snapshots` branch).
 
 To release it:
 
 1. Run `npx expo prebuild --clean` if you build locally, then `eas build -p ios --profile production`. The first time, EAS asks to create the watch app's bundle ID (`com.nomanriaz.misbaha.watchkitapp`); say yes.
-2. In App Store Connect, create version 1.1, attach the new build, and add the watch screenshots under Apple Watch.
+2. In App Store Connect, attach the new build and add the watch screenshots under Apple Watch.
 
 The watch app counts on its own (counts reset each day). It does not sync with the phone yet.
 
