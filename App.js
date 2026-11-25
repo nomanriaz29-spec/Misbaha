@@ -278,7 +278,6 @@ export default function App() {
         next={next}
         jamaat={jamaat}
         onOpenMosque={() => openMosque(null)}
-        onHideMosqueHint={() => update({ mosqueHint: false })}
         onOpenLibrary={() => setSheet('lib')}
         onChoose={choose}
         onOpenDuas={() => setSheet('duas')}

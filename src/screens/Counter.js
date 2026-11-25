@@ -27,7 +27,7 @@ const until = (ms) => {
   return m >= 60 ? t('time.hm', { h: Math.floor(m / 60), m: m % 60 }) : t('time.m', { m });
 };
 
-export default function Counter({ theme, progress, setProgress, settings, next, jamaat, onOpenMosque, onHideMosqueHint, onChoose, onOpenLibrary, onOpenDuas, onOpenSchedule, onOpenQibla, onOpenHistory, onOpenQuran }) {
+export default function Counter({ theme, progress, setProgress, settings, next, jamaat, onOpenMosque, onChoose, onOpenLibrary, onOpenDuas, onOpenSchedule, onOpenQibla, onOpenHistory, onOpenQuran }) {
   useKeepAwake();
   const { width, height } = useWindowDimensions();
   const ringSize = Math.min(width * 0.74, 290, height * 0.32);
@@ -147,17 +147,6 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
             <Text numberOfLines={1} style={[styles.small, { color: theme.muted, fontSize: 13 }]}>{jamaat.mosque}</Text>
           </View>
         </Pressable>
-      ) : settings.mosqueHint !== false && onOpenMosque ? (
-        <View style={[styles.jamaat, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-          <Text style={{ fontSize: 18 }}>🕌</Text>
-          <Pressable onPress={onOpenMosque} accessibilityRole="button" style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={[styles.jamaatT, { color: theme.fg }]}>{t('jamaatCard.setTitle')}</Text>
-            <Text numberOfLines={1} style={[styles.small, { color: theme.muted, fontSize: 13 }]}>{t('jamaatCard.setSub')}</Text>
-          </Pressable>
-          <Pressable onPress={onHideMosqueHint} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('jamaatCard.hide')}>
-            <Text style={{ color: theme.muted, fontSize: 16 }}>✕</Text>
-          </Pressable>
-        </View>
       ) : null}
 
       {ramadan && (
