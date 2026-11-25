@@ -1,0 +1,92 @@
+PASS  reads 3 days x 5 prayers from the app's JSON (got 15)
+PASS  reads the place name
+PASS  prayers sorted by time
+PASS  broken data is ignored instead of crashing
+PASS  missing data returns nil
+PASS  reads Arabic prayer names and labels
+PASS  11 entries: now + next 10 prayers (got 11)
+PASS  reloads when the timeline runs out
+PASS  at 14:20 the next prayer is Asr (got Asr)
+PASS  today's list shows the five prayers
+PASS  entries in time order
+PASS  once Isha begins, the next prayer is tomorrow's Fajr
+PASS  after Isha the list switches to tomorrow
+PASS  exactly at Asr time the widget moves on to Maghrib
+PASS  when the saved days run out it asks to open the app
+PASS  no data: shows the open-the-app message
+PASS  no data: retries later instead of giving up
+PASS  rendered 1-small
+PASS  rendered 2-medium
+PASS  rendered 3-medium-after-isha
+PASS  rendered 4-small-no-data
+PASS  rendered 5-lock-rectangular
+PASS  rendered 6-lock-circular
+PASS  rendered 7-lock-inline
+PASS  rendered 8-gallery-placeholder
+PASS  rendered 9-medium-arabic
+PASS  rendered 10-lock-arabic
+PASS  verse: reads 3 days and English labels
+PASS  verse: reads the Urdu translation
+PASS  verse: Arabic shows the verse without a translation
+PASS  verse: broken data is ignored
+PASS  verse: impossible surah numbers are rejected
+PASS  verse: one entry per saved day plus an end entry (got 4)
+PASS  verse: shows today's verse
+PASS  verse: switches to the next verse at midnight
+PASS  verse: a different verse each day
+PASS  verse: when the days run out it asks to open the app and retries
+PASS  verse: old data is not shown on the wrong day
+PASS  verse: no data shows the open-the-app message
+PASS  rendered 11-verse-small
+PASS  rendered 12-verse-medium
+PASS  rendered 13-verse-large
+PASS  rendered 14-verse-lock
+PASS  rendered 15-verse-medium-urdu
+PASS  rendered 16-verse-medium-arabic
+PASS  rendered 17-verse-medium-longest
+PASS  rendered 18-verse-large-longest
+PASS  rendered 19-verse-small-longest
+PASS  rendered 20-verse-medium-longest-urdu
+PASS  rendered 21-verse-no-data
+PASS  rendered 22-verse-gallery
+PASS  today's prayers: the small widget lists all five times
+PASS  rendered 23-today-small
+PASS  rendered 24-today-small-after-isha
+PASS  rendered 25-today-lock
+PASS  rendered 26-today-small-arabic
+PASS  rendered 27-today-no-data
+PASS  hourly verse: reads hourly data
+PASS  hourly verse: at 14:20 shows the 14:00 verse
+PASS  hourly verse: switches on the hour (got 3 entries)
+PASS  hourly verse: a different verse each hour
+PASS  hourly verse: asks to open the app after the last saved hour
+PASS  hourly verse: never shows an old hour's verse
+PASS  rendered 28-verse-lock-rect
+PASS  rendered 29-verse-lock-circle
+PASS  rendered 30-verse-lock-inline
+PASS  rendered 31-verse-lock-rect-urdu
+PASS  rendered 32-verse-lock-rect-arabic
+PASS  rendered 33-verse-lock-rect-longest
+PASS  rendered 34-verse-lock-circle-hourly
+PASS  rendered 35-verse-lock-rect-hourly
+PASS  rendered 36-verse-medium-hourly
+PASS  rendered 37-verse-lock-circle-hourly-arabic
+PASS  salah: reads the app's ticks
+PASS  salah: 2 of 5 prayed
+PASS  salah: at 14:20 Dhuhr can be ticked, Asr (15:15) not yet
+PASS  salah: tapping Asr on the widget ticks it
+PASS  salah: the widget's tick is saved for the app
+PASS  salah: tapping again unticks (newer tick wins over the app's)
+PASS  salah: all five ticked
+PASS  salah: refreshes as Asr, Maghrib and Isha begin, and at midnight (5 entries)
+PASS  salah: keeps refreshing
+PASS  salah: edits are JSON data the app can read back
+PASS  rendered 38-salah-small
+PASS  rendered 39-salah-medium
+PASS  rendered 40-salah-medium-done
+PASS  rendered 41-salah-lock-rect
+PASS  rendered 42-salah-lock-circle
+PASS  rendered 43-salah-small-arabic
+PASS  rendered 44-salah-medium-arabic
+PASS  rendered 45-salah-gallery
+ALL PASSED
