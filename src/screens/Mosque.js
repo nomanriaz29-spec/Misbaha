@@ -89,13 +89,25 @@ export default function Mosque({ visible, onClose, settings, update, incoming, o
       {note ? <T theme={theme} style={{ color: theme.brass, fontSize: 15 }}>{note}</T> : null}
       {view === 'find' || !draft ? (
         <>
-          <Group theme={theme}>
+          <Group label={t('mosque.typeTitle')} theme={theme}>
             <Row theme={theme} first style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-              <T theme={theme} style={{ color: theme.muted, fontSize: 15, lineHeight: 21 }}>{t('mosque.intro')}</T>
-              <Pressable onPress={search} disabled={state.busy || !settings.location} style={[styles.primary, { backgroundColor: theme.brass, opacity: settings.location ? 1 : 0.5 }]}>
-                {state.busy ? <ActivityIndicator color={theme.bg} /> : <Text style={{ color: theme.bg, fontFamily: FONTS.uiBold, fontSize: 16 }}>{t('mosque.find')}</Text>}
+              <T theme={theme} style={{ color: theme.muted, fontSize: 15, lineHeight: 21 }}>{t('mosque.typeHint')}</T>
+              <TextInput value={manual} onChangeText={setManual} placeholder={t('mosque.namePh')} placeholderTextColor={theme.muted} maxLength={80}
+                returnKeyType="done" onSubmitEditing={() => choose({ name: manual.trim() || t('mosque.defaultName'), osm: '' })}
+                style={[styles.input, { color: theme.fg, borderColor: theme.line }]} accessibilityLabel={t('mosque.namePh')} />
+              <Pressable onPress={() => choose({ name: manual.trim() || t('mosque.defaultName'), osm: '' })} accessibilityRole="button"
+                style={[styles.primary, { backgroundColor: theme.brass }]}>
+                <Text style={{ color: theme.bg, fontFamily: FONTS.uiBold, fontSize: 16 }}>{t('mosque.useName')}</Text>
               </Pressable>
-              <T theme={theme} style={{ color: theme.muted, fontSize: 12.5, lineHeight: 17 }}>{t('mosque.privacy')}</T>
+            </Row>
+          </Group>
+          <Group label={t('mosque.mapTitle')} theme={theme}>
+            <Row theme={theme} first style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+              <Pressable onPress={search} disabled={state.busy || !settings.location} accessibilityRole="button"
+                style={[styles.secondary, { borderColor: theme.brass, opacity: settings.location ? 1 : 0.5 }]}>
+                {state.busy ? <ActivityIndicator color={theme.brass} /> : <Text style={{ color: theme.fg, fontFamily: FONTS.uiBold, fontSize: 16 }}>{t('mosque.find')}</Text>}
+              </Pressable>
+              <T theme={theme} style={{ color: theme.muted, fontSize: 12.5, lineHeight: 17 }}>{t('mosque.mapNote')} {t('mosque.privacy')}</T>
             </Row>
           </Group>
           {state.error ? <T theme={theme} style={{ color: theme.brass, fontSize: 15 }}>{state.error}</T> : null}
@@ -114,13 +126,6 @@ export default function Mosque({ visible, onClose, settings, update, incoming, o
               ))}
             </Group>
           ) : null}
-          <Group label={t('mosque.manualTitle')} theme={theme}>
-            <Row theme={theme} first style={{ gap: 8 }}>
-              <TextInput value={manual} onChangeText={setManual} placeholder={t('mosque.namePh')} placeholderTextColor={theme.muted} maxLength={80}
-                style={[styles.input, { color: theme.fg, borderColor: theme.line, flex: 1 }]} />
-              <Pill theme={theme} label={t('common.choose')} on={false} onPress={() => manual.trim() && choose({ name: manual.trim(), osm: '' })} />
-            </Row>
-          </Group>
           <Group label={t('share.importTitle')} theme={theme}>
             <Row theme={theme} first style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
               <TextInput value={paste} onChangeText={setPaste} placeholder={t('share.importPh')} placeholderTextColor={theme.muted} multiline
@@ -232,6 +237,7 @@ function Step({ theme, onMinus, onPlus, value, label }) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
   primary: { borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  secondary: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5 },
   pill: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   pillSmall: { paddingHorizontal: 11, paddingVertical: 7, borderRadius: 10 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 6 },

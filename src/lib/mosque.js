@@ -6,7 +6,8 @@ import { getTimes, distanceKm } from './prayer';
 
 export const JAMAAT_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'jumuah'];
 export const REMIND_OPTIONS = [0, 10, 15, 20, 30];
-const ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+// Public Overpass servers are run by volunteers and are often busy, so try several and give up quickly.
+const ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 
 // Defaults: jamaat this many minutes after the azan; Jumu'ah at a fixed time.
 export const DEFAULT_JAMAAT = {
@@ -45,7 +46,7 @@ export function cleanMosque(m) {
 
 export function overpassQuery(lat, lng, radius) {
   const a = `(around:${radius},${lat},${lng})`;
-  return `[out:json][timeout:20];(node["amenity"="place_of_worship"]["religion"="muslim"]${a};way["amenity"="place_of_worship"]["religion"="muslim"]${a};relation["amenity"="place_of_worship"]["religion"="muslim"]${a};);out center 80;`;
+  return `[out:json][timeout:8];(node["amenity"="place_of_worship"]["religion"="muslim"]${a};way["amenity"="place_of_worship"]["religion"="muslim"]${a};relation["amenity"="place_of_worship"]["religion"="muslim"]${a};);out center 80;`;
 }
 
 // Turns the Overpass answer into a list sorted by distance from the user.
@@ -95,7 +96,7 @@ export async function findMosques(lat, lng, lang = 'en') {
   for (const radius of [2000, 6000]) {
     let json = null;
     for (const url of ENDPOINTS) {
-      try { json = await post(url, overpassQuery(la, ln, radius), 20000); break; } catch (e) { lastErr = e; }
+      try { json = await post(url, overpassQuery(la, ln, radius), 9000); break; } catch (e) { lastErr = e; }
     }
     if (!json) throw new Error('offline' + (lastErr ? ': ' + lastErr.message : ''));
     const list = parseMosques(json, lat, lng, lang);
