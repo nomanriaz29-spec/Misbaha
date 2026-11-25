@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Ratb post images</title>
+<body style="background:#0F1A19;color:#E9E5D9;font:16px system-ui;padding:24px">Sending images to the window that opened this page…
+<script>
+// Helper for posting Ratb's launch images: fetches them from this site and hands them to the opener window.
+(async () => {
+  const names = ['ratb-post-1.png', 'ratb-post-2.png', 'ratb-post-3.png'];
+  const files = [];
+  for (const n of names) files.push({ name: n, blob: await (await fetch(n)).blob() });
+  if (window.opener) { window.opener.postMessage({ ratbImages: files }, 'https://www.instagram.com'); document.body.textContent = 'Sent. You can close this tab.'; }
+  else document.body.textContent = 'Open this page from the Instagram tab.';
+})();
+</script>
