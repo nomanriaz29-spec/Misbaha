@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><title>Ratb video</title>
+<body style="background:#0F1A19;color:#E9E5D9;font:16px system-ui;padding:24px">Sending…
+<script>
+// Hands ratb-ad.mp4 to the window that opened this page (used to post the Reel).
+(async () => {
+  const blob = await (await fetch('ratb-ad.mp4')).blob();
+  const msg = { ratbVideo: { name: 'ratb-ad.mp4', blob } };
+  if (window.opener) { window.opener.postMessage(msg, '*'); document.body.textContent = 'Sent (' + blob.size + ' bytes). You can close this tab.'; }
+  else document.body.textContent = 'No opener.';
+})();
+</script>
