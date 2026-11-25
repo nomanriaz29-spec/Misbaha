@@ -305,7 +305,7 @@ export default {
   'mosque.findShort': 'Find',
   'mosque.intro': 'Mosques set their own jamaat times. Find your mosque, enter its times once, and Ratb shows them with the azan times and can remind you before jamaat.',
   'mosque.find': 'Find mosques near me',
-  'mosque.privacy': 'This sends your approximate location (about 1 km) to OpenStreetMap once, to list the mosques around you. Nothing else leaves your phone.',
+  'mosque.privacy': 'This sends your approximate location (about 1 km) to Apple Maps, or to OpenStreetMap if Apple finds nothing, to list the mosques around you. Nothing else leaves your phone.',
   'mosque.nearby': 'Nearby mosques',
   'mosque.unnamed': 'Mosque (no name on the map)',
   'mosque.m': '{n} m',

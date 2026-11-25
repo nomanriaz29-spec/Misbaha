@@ -7,6 +7,7 @@ on:
     paths:
       - 'targets/**'
       - 'ci/**'
+      - 'modules/**'
       - '.github/workflows/ios-check.yml'
   workflow_dispatch:
 
@@ -56,6 +57,19 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           SIMCTL_CHILD_TZ=Asia/Dubai xcrun simctl spawn "$UDID" "$PWD/build/widget-snapshot" "$PWD/out" | tee out/results.txt
           exit ${PIPESTATUS[0]}
+
+      - name: Apple Maps mosque search on a simulator
+        if: always()
+        run: |
+          xcrun --sdk iphonesimulator swiftc -parse-as-library \
+            -target arm64-apple-ios15.1-simulator \
+            modules/ratb-places/ios/MosqueSearch.swift ci/MosqueSearchCheck.swift -o build/mosque-search
+          UDID=$(xcrun simctl list devices booted -j | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)['devices']
+          print(next(x['udid'] for k, v in d.items() if 'iOS' in k for x in v))")
+          mkdir -p out
+          xcrun simctl spawn "$UDID" "$PWD/build/mosque-search" "$PWD/out/mosque-search.txt"
 
       - name: Apple Watch screenshots
         if: always()

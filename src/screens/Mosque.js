@@ -114,7 +114,7 @@ export default function Mosque({ visible, onClose, settings, update, incoming, o
           {state.list?.length ? (
             <Group label={t('mosque.nearby')} theme={theme}>
               {state.list.map((m, i) => (
-                <Pressable key={m.osm} onPress={() => choose(m)} style={({ pressed }) => [pressed && { opacity: 0.6 }]}>
+                <Pressable key={m.osm || m.key || m.name + i} onPress={() => choose(m)} style={({ pressed }) => [pressed && { opacity: 0.6 }]}>
                   <Row theme={theme} first={i === 0}>
                     <View style={{ flex: 1 }}>
                       <T theme={theme} numberOfLines={2} style={{ fontFamily: m.name ? FONTS.ui : FONTS.ui, color: m.name ? theme.fg : theme.muted }}>{m.name || t('mosque.unnamed')}</T>

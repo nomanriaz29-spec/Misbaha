@@ -11,7 +11,7 @@ Your phone works out its location with its own location service. Besides GPS, th
 
 To show your city name, Ratb asks your phone's built-in mapping service to turn the coordinates into a place name. That service is Apple on iPhone and Google on Android, and they handle the request under their own privacy policies.
 
-If you tap "Find mosques near me" (Prayers → My mosque), Ratb sends your location, rounded to about 1 km, to OpenStreetMap's public Overpass service to list the mosques around you. This happens only when you tap that button, and the request carries no name, account or device identifier. OpenStreetMap's privacy policy: https://osmfoundation.org/wiki/Privacy_Policy. The mosque you pick and its jamaat times are stored only on your phone.
+If you tap "Find mosques near me" (Prayers → My mosque), Ratb sends your location, rounded to about 1 km, to Apple Maps on iPhone to list the mosques around you, and to OpenStreetMap's public Overpass service only if Apple Maps finds none (or on Android). This happens only when you tap that button, and the request carries no name, account or device identifier. Apple handles the search under its own privacy policy (https://www.apple.com/legal/privacy/); OpenStreetMap's privacy policy: https://osmfoundation.org/wiki/Privacy_Policy. You can also just type your mosque's name, and then nothing is sent. The mosque you pick and its jamaat times are stored only on your phone.
 
 Ratb does not send your location anywhere else.
 

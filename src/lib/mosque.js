@@ -3,6 +3,7 @@
 // mosques". That one request sends the rounded location (about 1 km) to OpenStreetMap; nothing
 // else leaves the phone. Jamaat times are set once by the user, since mosques set their own.
 import { getTimes, distanceKm } from './prayer';
+import { searchMosquesApple } from '../../modules/ratb-places';
 
 export const JAMAAT_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'jumuah'];
 export const REMIND_OPTIONS = [0, 10, 15, 20, 30];
@@ -88,10 +89,24 @@ async function post(url, body, ms) {
   }
 }
 
-// Nearest mosques around a point. Widens the search if there are fewer than 5 within 2 km.
-// Throws 'offline' when no server answers.
-export async function findMosques(lat, lng, lang = 'en') {
-  const la = Math.round(lat * 100) / 100, ln = Math.round(lng * 100) / 100; // about 1 km, for privacy
+// Apple Maps results (iPhone) in the same shape as parseMosques. Empty list when nothing matched.
+export function fromApple(rows, lat, lng) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter((r) => r && Number.isFinite(r.latitude) && Number.isFinite(r.longitude) && typeof r.name === 'string' && r.name.trim())
+    .map((r, i) => ({
+      osm: '',
+      key: 'apple:' + i + ':' + r.latitude.toFixed(5) + ',' + r.longitude.toFixed(5),
+      name: r.name.trim().slice(0, 80),
+      lat: r.latitude,
+      lng: r.longitude,
+      km: Number.isFinite(r.distanceKm) ? r.distanceKm : distanceKm({ lat, lng }, { lat: r.latitude, lng: r.longitude }),
+      denomination: typeof r.address === 'string' ? r.address.slice(0, 80) : '',
+    }))
+    .sort((a, b) => a.km - b.km)
+    .slice(0, 30);
+}
+
+async function findOnOsm(la, ln, lat, lng, lang) {
   let lastErr = null;
   for (const radius of [2000, 6000]) {
     let json = null;
@@ -103,6 +118,21 @@ export async function findMosques(lat, lng, lang = 'en') {
     if (list.length >= 5 || radius === 6000) return list;
   }
   return [];
+}
+
+// Nearest mosques around a point. On iPhone, Apple Maps first (it lists far more mosques);
+// OpenStreetMap only if Apple finds nothing or isn't available. Throws 'offline' when nothing answers.
+// The location sent is rounded to about 1 km, for privacy.
+export async function findMosques(lat, lng, lang = 'en') {
+  const la = Math.round(lat * 100) / 100, ln = Math.round(lng * 100) / 100;
+  for (const radius of [3000, 8000]) {
+    let rows;
+    try { rows = await searchMosquesApple(la, ln, radius); } catch (e) { break; } // Apple failed: try the map
+    if (rows === null) break; // no Apple Maps on this device
+    const list = fromApple(rows, lat, lng);
+    if (list.length >= 3 || (radius === 8000 && list.length)) return list;
+  }
+  return findOnOsm(la, ln, lat, lng, lang);
 }
 
 const pad = (n) => String(n).padStart(2, '0');
