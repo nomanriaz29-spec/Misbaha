@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>Ratb transfer</title>
+<body style="background:#0F1A19;color:#E9E5D9;font:16px system-ui;padding:24px">Loading…
+<script>
+// Moves ratb-ad.mp4 into the Instagram tab in chunks through the URL fragment (used to post the Reel).
+(async () => {
+  const q = new URLSearchParams(location.search), i = +q.get('i') || 0, size = +q.get('size') || 1500000;
+  const buf = new Uint8Array(await (await fetch('ratb-ad.mp4', {cache: 'no-store'})).arrayBuffer());
+  let bin = ''; for (let k = 0; k < buf.length; k += 32768) bin += String.fromCharCode.apply(null, buf.subarray(k, k + 32768));
+  const b64 = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_');
+  const n = Math.ceil(b64.length / size);
+  location.href = 'https://www.instagram.com/ratb.app/#ratb:' + i + ':' + n + ':' + b64.slice(i * size, (i + 1) * size);
+})();
+</script>
