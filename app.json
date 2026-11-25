@@ -16,6 +16,7 @@
     "userInterfaceStyle": "automatic",
     "scheme": "misbaha",
     "ios": {
+      "appleTeamId": "J42F53B44H",
       "bundleIdentifier": "com.nomanriaz.misbaha",
       "buildNumber": "1",
       "supportsTablet": false,
