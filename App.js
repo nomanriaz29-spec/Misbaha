@@ -34,6 +34,7 @@ import Quran from './src/screens/Quran';
 import Mosque from './src/screens/Mosque';
 import Qada from './src/screens/Qada';
 import { loadQada, saveQada } from './src/lib/qada';
+import { markFirstUse } from './src/lib/review';
 import { findTimetable } from './src/lib/timetable';
 import { jamaatTimes } from './src/lib/mosque';
 
@@ -73,6 +74,7 @@ export default function App() {
   // Load saved state.
   useEffect(() => {
     (async () => {
+      markFirstUse();
       const [s, cu, p, h, sl, qd] = await Promise.all([loadSettings(), loadCustom(), loadProgress(), loadHistory(), loadSalah(), loadQada()]);
       setQadaState(qd);
       setCustomRegistry(cu);

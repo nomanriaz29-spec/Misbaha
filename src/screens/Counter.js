@@ -11,6 +11,7 @@ import { itemFor, labelFor, recommend, setName, duaField, dhikrMeaning, dhikrNam
 import { toHijri, formatHijri, isRamadan } from '../lib/hijri';
 import { t, getLang } from '../i18n';
 import { FONTS, FILL } from '../theme';
+import { setFinished } from '../lib/review';
 
 const blank = { step: 0, c: 0, extra: false };
 
@@ -59,6 +60,8 @@ export default function Counter({ theme, progress, setProgress, settings, next, 
     const hit = k.target > 0 && p.c === k.target;
     buzz(hit ? 'target' : p.c % 33 === 0 ? 'round' : 'tap');
     write(p, 1);
+    // Whole routine or count finished: maybe ask for a rating once the completion card is up.
+    if (hit && !p.extra && !pocket && (k.type !== 'set' || k.step === k.set.steps.length - 1)) setTimeout(() => { setFinished(); }, 1500);
     if (k.type === 'set' && p.c >= k.target && k.step < k.set.steps.length - 1) {
       lock.current = true;
       setTimeout(() => { write({ step: p.step + 1, c: 0, extra: false }); lock.current = false; }, 650);
